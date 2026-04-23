@@ -55,7 +55,7 @@ export default function WishlistPage() {
       {isLoading ? (
         <div className="flex justify-center py-24"><Loader2 size={32} className="animate-spin text-neutral-400" /></div>
       ) : products.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
           {products.map((product) => (
             <ProductCard 
               key={product.id}

@@ -8,11 +8,19 @@ export async function GET(req: Request) {
     const brand = searchParams.get('brand');
     const sort = searchParams.get('sort'); // price_asc, price_desc, newest
     
+    const ids = searchParams.get('ids');
+    
     let orderBy: any = { createdAt: 'desc' };
     if (sort === 'price_asc') orderBy = { price: 'asc' };
     if (sort === 'price_desc') orderBy = { price: 'desc' };
 
     const where: any = {};
+
+    // Support fetching by specific IDs (for stock validation)
+    if (ids) {
+      where.id = { in: ids.split(',').filter(Boolean) };
+    }
+
     if (category && category.toLowerCase() !== 'sale') {
       where.category = { equals: category, mode: 'insensitive' };
     }

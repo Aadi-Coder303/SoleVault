@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Search, Heart, ShoppingBag, Menu, User, LogOut } from 'lucide-react';
+import { Search, Heart, ShoppingBag, Menu, User, LogOut, X } from 'lucide-react';
 import { useCartStore } from '@/store/useCartStore';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
@@ -16,6 +16,7 @@ export default function Navbar() {
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [scrolled, setScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
@@ -44,6 +45,7 @@ export default function Navbar() {
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     setUser(null);
+    setMobileMenuOpen(false);
     router.push('/');
   };
 
@@ -65,10 +67,14 @@ export default function Navbar() {
         
         {/* Mobile Menu & Logo */}
         <div className="flex items-center gap-4">
-          <button className="md:hidden hover:text-[#E63946] transition-colors">
-            <Menu size={24} />
+          <button
+            className="md:hidden hover:text-[#E63946] transition-colors"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Toggle menu"
+          >
+            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
-          <Link href="/" className="text-2xl font-bold tracking-widest uppercase">
+          <Link href="/" className="text-2xl font-bold tracking-widest uppercase" onClick={() => setMobileMenuOpen(false)}>
             SOLE VAULT
           </Link>
         </div>
@@ -82,7 +88,7 @@ export default function Navbar() {
         </nav>
 
         {/* Icons */}
-        <div className="flex items-center gap-5">
+        <div className="flex items-center gap-4 sm:gap-5">
           <div className="relative">
             <button 
               onClick={() => setShowSearch(!showSearch)} 
@@ -108,7 +114,7 @@ export default function Navbar() {
               </div>
             )}
           </div>
-          <Link href="/wishlist" aria-label="Wishlist" className="hover:text-[#E63946] transition-colors relative hidden sm:block">
+          <Link href="/wishlist" aria-label="Wishlist" className="hover:text-[#E63946] transition-colors relative">
             <Heart size={20} />
           </Link>
           <Link href="/cart" aria-label="Cart" className="hover:text-[#E63946] transition-colors relative">
@@ -119,6 +125,7 @@ export default function Navbar() {
               </span>
             )}
           </Link>
+          {/* Desktop auth (hidden on mobile — shown in mobile menu instead) */}
           <div className="hidden sm:block">
             {mounted && !user && (
               <Link href="/login" className="text-sm font-bold uppercase tracking-wide hover:text-[#E63946]">
@@ -138,8 +145,43 @@ export default function Navbar() {
               </div>
             )}
           </div>
+          {/* Mobile-only login icon (visible as icon, no text) */}
+          <div className="sm:hidden">
+            {mounted && !user && (
+              <Link href="/login" aria-label="Log In" className="hover:text-[#E63946] transition-colors">
+                <User size={20} />
+              </Link>
+            )}
+            {mounted && user && (
+              <button onClick={handleSignOut} className="hover:text-[#E63946] transition-colors" aria-label="Sign Out">
+                <LogOut size={20} />
+              </button>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* Mobile Menu Panel */}
+      {mobileMenuOpen && (
+        <div className="md:hidden border-t border-neutral-200 bg-white animate-in slide-in-from-top duration-200">
+          <nav className="container mx-auto px-4 py-4 flex flex-col gap-1">
+            <Link href="/products?category=men" onClick={() => setMobileMenuOpen(false)} className="py-3 px-2 text-sm uppercase tracking-[0.08em] font-medium text-neutral-600 hover:text-black hover:bg-neutral-50 transition-all">Men</Link>
+            <Link href="/products?category=women" onClick={() => setMobileMenuOpen(false)} className="py-3 px-2 text-sm uppercase tracking-[0.08em] font-medium text-neutral-600 hover:text-black hover:bg-neutral-50 transition-all">Women</Link>
+            <Link href="/products?category=kids" onClick={() => setMobileMenuOpen(false)} className="py-3 px-2 text-sm uppercase tracking-[0.08em] font-medium text-neutral-600 hover:text-black hover:bg-neutral-50 transition-all">Kids</Link>
+            <Link href="/products?category=sale" onClick={() => setMobileMenuOpen(false)} className="py-3 px-2 text-sm uppercase tracking-[0.08em] font-bold text-[#E63946] hover:text-black hover:bg-neutral-50 transition-all">Sale</Link>
+            <div className="border-t border-neutral-200 mt-2 pt-2">
+              <Link href="/wishlist" onClick={() => setMobileMenuOpen(false)} className="py-3 px-2 text-sm uppercase tracking-[0.08em] font-medium text-neutral-600 hover:text-black hover:bg-neutral-50 transition-all flex items-center gap-2">
+                <Heart size={16} /> Wishlist
+              </Link>
+              {mounted && user && user.email && OWNER_EMAILS.includes(user.email) && (
+                <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)} className="py-3 px-2 text-sm uppercase tracking-[0.08em] font-medium text-neutral-600 hover:text-black hover:bg-neutral-50 transition-all flex items-center gap-2">
+                  <User size={16} /> Dashboard
+                </Link>
+              )}
+            </div>
+          </nav>
+        </div>
+      )}
     </header>
   );
 }

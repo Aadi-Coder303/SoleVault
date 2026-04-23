@@ -33,16 +33,18 @@ export default function LoginPage() {
 
   const handleSendPhoneOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!phone.startsWith('+')) {
-      setError("Please include country code (e.g. +91 or +1)");
+    const digits = phone.replace(/\D/g, '');
+    if (digits.length !== 10) {
+      setError('Please enter a valid 10-digit phone number.');
       return;
     }
+    const fullPhone = `+91${digits}`;
 
     setLoading(true);
     setError(null);
 
     const { error } = await supabase.auth.signInWithOtp({
-      phone,
+      phone: fullPhone,
     });
 
     if (error) {
@@ -59,8 +61,9 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
 
+    const fullPhone = `+91${phone.replace(/\D/g, '')}`;
     const { error } = await supabase.auth.verifyOtp({
-      phone,
+      phone: fullPhone,
       token: otp,
       type: 'sms',
     });
@@ -83,7 +86,7 @@ export default function LoginPage() {
         <p className="text-sm text-neutral-500 text-center mb-8">
           {step === 'options' 
             ? 'Sign in to your SoleVault account.' 
-            : `We sent a 6-digit code to ${phone}.`}
+            : `We sent a 6-digit code to +91 ${phone}.`}
         </p>
 
         {error && (
@@ -122,16 +125,19 @@ export default function LoginPage() {
             <form onSubmit={handleSendPhoneOtp} className="flex flex-col gap-4">
               <div>
                 <label htmlFor="phone" className="block text-sm font-semibold mb-2">Phone Number</label>
-                <input
-                  id="phone"
-                  type="tel"
-                  required
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+91 98765 43210"
-                  className="w-full border border-neutral-300 p-3 text-sm focus:outline-none focus:border-black bg-white"
-                />
-                <p className="text-xs text-neutral-500 mt-1">Include country code (e.g. +91)</p>
+                <div className="flex">
+                  <span className="inline-flex items-center px-3 bg-neutral-100 border border-r-0 border-neutral-300 text-sm font-semibold text-neutral-600 select-none">+91</span>
+                  <input
+                    id="phone"
+                    type="tel"
+                    required
+                    maxLength={10}
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
+                    placeholder="98765 43210"
+                    className="w-full border border-neutral-300 p-3 text-sm focus:outline-none focus:border-black bg-white"
+                  />
+                </div>
               </div>
               <button
                 type="submit"

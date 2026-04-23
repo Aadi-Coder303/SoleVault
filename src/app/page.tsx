@@ -33,7 +33,7 @@ export default async function Home() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
           {products.map((p, i) => (
             <div
               key={p.id}
@@ -91,17 +91,17 @@ export default async function Home() {
       {/* Trust Badges */}
       <section className="py-16 border-t border-neutral-100">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 text-center">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-8">
             {[
               { icon: '✓', title: '100% Authentic', desc: 'Every pair verified' },
-              { icon: '🚚', title: 'Free Shipping', desc: 'On all orders' },
-              { icon: '↩', title: 'Easy Returns', desc: 'Hassle-free policy' },
-              { icon: '🔒', title: 'Secure Payments', desc: 'Powered by Razorpay' },
-            ].map((b) => (
-              <div key={b.title} className="group flex flex-col items-center gap-2 p-4 hover:bg-neutral-50 transition-colors rounded-sm">
-                <span className="text-2xl">{b.icon}</span>
-                <p className="font-bold text-sm uppercase tracking-wide">{b.title}</p>
-                <p className="text-xs text-neutral-500">{b.desc}</p>
+              { icon: '🚚', title: 'Free Shipping', desc: 'Pan India delivery' },
+              { icon: '↩', title: 'Easy Returns', desc: '7-day claim window' },
+              { icon: '🔒', title: 'Secure Payments', desc: 'Powered by PayU' },
+            ].map((b, i) => (
+              <div key={b.title} className="group flex flex-col items-center gap-2 p-5 hover:bg-neutral-50 border border-transparent hover:border-neutral-200 transition-all duration-300 rounded-sm">
+                <span className="text-2xl group-hover:scale-110 transition-transform duration-300">{b.icon}</span>
+                <p className="font-bold text-xs sm:text-sm uppercase tracking-wide text-center">{b.title}</p>
+                <p className="text-[10px] sm:text-xs text-neutral-500 text-center">{b.desc}</p>
               </div>
             ))}
           </div>

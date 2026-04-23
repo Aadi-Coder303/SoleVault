@@ -32,8 +32,8 @@ export default function CartPage() {
           <div className="md:w-2/3 flex flex-col gap-6">
             {items.map(item => (
               <div key={item.id} className="flex gap-4 border-b border-neutral-200 pb-6">
-                <div className="w-24 h-24 bg-neutral-100 flex-shrink-0">
-                  {item.imageUrl && <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />}
+                <div className="w-24 h-24 bg-neutral-100 flex-shrink-0 overflow-hidden">
+                  {item.imageUrl && <img src={item.imageUrl.split(',')[0].trim()} alt={item.name} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />}
                 </div>
                 <div className="flex-1 flex flex-col justify-between">
                   <div>

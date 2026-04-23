@@ -1,12 +1,22 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
-import { Loader2, ShieldCheck, Truck, CreditCard } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Loader2, ShieldCheck, Truck, CreditCard, MapPin, AlertTriangle } from 'lucide-react';
 import { useCartStore } from '@/store/useCartStore';
 import { formatCurrency } from '@/lib/formatCurrency';
-import Image from 'next/image';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { useSearchParams } from 'next/navigation';
+
+interface SavedAddress {
+  name?: string;
+  address1?: string;
+  address2?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  phone?: string;
+  email?: string;
+}
 
 export default function CheckoutPage() {
   const [fullName, setFullName] = useState('');
@@ -24,11 +34,55 @@ export default function CheckoutPage() {
   const [allowCod, setAllowCod] = useState(true);
   const [mounted, setMounted] = useState(false);
 
+  // Stock validation state
+  const [outOfStockItems, setOutOfStockItems] = useState<string[]>([]);
+  const [isValidatingStock, setIsValidatingStock] = useState(false);
+
+  // GoKwik address prefill state
+  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
+  const [isFetchingAddresses, setIsFetchingAddresses] = useState(false);
+  const [addressFetched, setAddressFetched] = useState(false);
+
   const payuFormRef = useRef<HTMLFormElement>(null);
   const [payuParams, setPayuParams] = useState<Record<string, string> | null>(null);
 
-  const { items } = useCartStore();
+  const { items, removeItem } = useCartStore();
   const searchParams = useSearchParams();
+
+  // Validate stock on mount
+  const validateStock = useCallback(async () => {
+    if (items.length === 0) return;
+    setIsValidatingStock(true);
+    try {
+      const productIds = [...new Set(items.map(i => i.productId))];
+      const res = await fetch(`/api/products?ids=${productIds.join(',')}`);
+      if (!res.ok) return;
+      const products = await res.json();
+
+      const oosIds: string[] = [];
+      for (const item of items) {
+        const product = products.find((p: any) => p.id === item.productId);
+        if (!product) {
+          oosIds.push(item.id);
+          continue;
+        }
+        const sizes = product.sizes || {};
+        const stock = sizes[item.size] ?? 0;
+        if (stock <= 0) {
+          oosIds.push(item.id);
+        }
+      }
+
+      if (oosIds.length > 0) {
+        setOutOfStockItems(oosIds);
+        toast.error(`${oosIds.length} item(s) in your bag are out of stock.`);
+      }
+    } catch {
+      // Non-blocking
+    } finally {
+      setIsValidatingStock(false);
+    }
+  }, [items]);
 
   useEffect(() => {
     setMounted(true);
@@ -38,12 +92,75 @@ export default function CheckoutPage() {
   }, [searchParams]);
 
   useEffect(() => {
+    if (mounted && items.length > 0) {
+      validateStock();
+    }
+  }, [mounted, validateStock]);
+
+  useEffect(() => {
     if (payuParams && payuFormRef.current) {
       payuFormRef.current.submit();
     }
   }, [payuParams]);
 
-  const subtotal = items.reduce((sum, item) => sum + item.price, 0);
+  // Filter out out-of-stock items for pricing
+  const validItems = items.filter(i => !outOfStockItems.includes(i.id));
+  const subtotal = validItems.reduce((sum, item) => sum + item.price, 0);
+
+  // Fetch GoKwik saved addresses when phone has 10 digits
+  const handlePhoneChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+    setPhone(val);
+
+    if (val.length === 10 && !addressFetched) {
+      setIsFetchingAddresses(true);
+      try {
+        const res = await fetch('/api/gokwik/address', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone: val, email }),
+        });
+        const data = await res.json();
+        if (data.addresses && data.addresses.length > 0) {
+          setSavedAddresses(data.addresses);
+          toast.success('Found saved address(es)!', { icon: '📍' });
+        }
+        setAddressFetched(true);
+      } catch {
+        // Fail silently
+      } finally {
+        setIsFetchingAddresses(false);
+      }
+    }
+  };
+
+  const applySavedAddress = (addr: SavedAddress) => {
+    if (addr.name) setFullName(addr.name);
+    if (addr.address1) setAddress1(addr.address1);
+    if (addr.address2) setAddress2(addr.address2);
+    if (addr.pincode) {
+      setPincode(addr.pincode);
+      // Trigger pincode auto-fill for city/state
+      fetchPincodeData(addr.pincode);
+    }
+    if (addr.city) setCity(addr.city);
+    if (addr.state) setStateName(addr.state);
+    if (addr.email && !email) setEmail(addr.email);
+    setSavedAddresses([]); // Hide the selector after picking
+    toast.success('Address applied!');
+  };
+
+  const fetchPincodeData = async (pin: string) => {
+    setIsFetchingPin(true);
+    try {
+      const res = await fetch(`https://api.postalpincode.in/pincode/${pin}`);
+      const data = await res.json();
+      if (data[0].Status === 'Success') {
+        setCity(data[0].PostOffice[0].District);
+        setStateName(data[0].PostOffice[0].State);
+      }
+    } catch (err) { console.error(err); } finally { setIsFetchingPin(false); }
+  };
 
   const handlePincodeChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value.replace(/\D/g, '');
@@ -60,10 +177,11 @@ export default function CheckoutPage() {
           if (phone.length >= 10) {
             setIsCheckingRisk(true);
             try {
+              const fullPhone = `+91${phone.replace(/\D/g, '')}`;
               const riskRes = await fetch('/api/gokwik/risk', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone, pincode: val, amount: subtotal }),
+                body: JSON.stringify({ phone: fullPhone, pincode: val, amount: subtotal }),
               });
               const riskData = await riskRes.json();
               setAllowCod(riskData.allowCod ?? true);
@@ -83,8 +201,12 @@ export default function CheckoutPage() {
     if (!fullName || !phone || !email || !address1 || !pincode || !city || !stateName) {
       toast.error('Please fill in all required fields.'); return;
     }
-    if (items.length === 0) { toast.error('Your bag is empty.'); return; }
+    if (validItems.length === 0) { toast.error('Your bag is empty or all items are out of stock.'); return; }
+    if (outOfStockItems.length > 0) {
+      toast.error('Please remove out-of-stock items before placing your order.'); return;
+    }
 
+    const fullPhone = `+91${phone.replace(/\D/g, '')}`;
     const fullAddress = `${address1}${address2 ? ', ' + address2 : ''}, ${city}, ${stateName} - ${pincode}`;
 
     if (paymentMethod === 'cod') {
@@ -94,10 +216,10 @@ export default function CheckoutPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            fullName, email, phone,
+            fullName, email, phone: fullPhone,
             address: fullAddress,
             amount: subtotal,
-            items: items.map(i => ({ productId: i.productId, name: i.name, size: i.size, price: i.price, qty: 1 })),
+            items: validItems.map(i => ({ productId: i.productId, name: i.name, size: i.size, price: i.price, qty: 1 })),
           }),
         });
       } catch { /* non-blocking */ }
@@ -107,7 +229,7 @@ export default function CheckoutPage() {
 
     setIsInitiatingPayment(true);
     try {
-      const productinfo = items.map(i => `${i.name} (${i.size})`).join(', ').substring(0, 100);
+      const productinfo = validItems.map(i => `${i.name} (${i.size})`).join(', ').substring(0, 100);
       const res = await fetch('/api/payment/initiate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -116,10 +238,10 @@ export default function CheckoutPage() {
           productinfo,
           firstname: fullName.split(' ')[0],
           email,
-          phone,
+          phone: fullPhone,
           address: fullAddress,
           // Pass full items so success route can decrement stock
-          items: items.map(i => ({ productId: i.productId, name: i.name, size: i.size, price: i.price, qty: 1 })),
+          items: validItems.map(i => ({ productId: i.productId, name: i.name, size: i.size, price: i.price, qty: 1 })),
         }),
       });
       const data = await res.json();
@@ -160,9 +282,53 @@ export default function CheckoutPage() {
             <div className="lg:w-2/3 flex flex-col gap-8">
               <section>
                 <h2 className="text-xl font-bold uppercase tracking-wide mb-6 flex items-center gap-2"><Truck size={18} /> Shipping Address</h2>
+
+                {/* GoKwik Saved Addresses */}
+                {savedAddresses.length > 0 && (
+                  <div className="mb-6 border border-green-200 bg-green-50 p-4 rounded-sm">
+                    <p className="text-sm font-semibold text-green-800 mb-3 flex items-center gap-2">
+                      <MapPin size={14} /> Saved Address{savedAddresses.length > 1 ? 'es' : ''} Found
+                    </p>
+                    <div className="flex flex-col gap-2">
+                      {savedAddresses.map((addr, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => applySavedAddress(addr)}
+                          className="text-left bg-white border border-green-200 p-3 hover:border-green-500 hover:bg-green-50 transition-all text-sm rounded-sm"
+                        >
+                          <p className="font-semibold">{addr.name || 'Saved Address'}</p>
+                          <p className="text-neutral-600 text-xs mt-0.5">
+                            {[addr.address1, addr.address2, addr.city, addr.state, addr.pincode].filter(Boolean).join(', ')}
+                          </p>
+                        </button>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSavedAddresses([])}
+                      className="text-xs text-neutral-500 hover:text-black underline mt-2"
+                    >
+                      Enter address manually instead
+                    </button>
+                  </div>
+                )}
+
+                {isFetchingAddresses && (
+                  <div className="mb-4 flex items-center gap-2 text-sm text-neutral-500">
+                    <Loader2 size={14} className="animate-spin" /> Looking up saved addresses…
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2"><label className="block text-sm font-semibold mb-2">Full Name *</label><input required type="text" value={fullName} onChange={e => setFullName(e.target.value)} className="w-full border border-neutral-300 p-3 focus:outline-none focus:border-black" placeholder="Aadi Golecha" /></div>
-                  <div><label className="block text-sm font-semibold mb-2">Phone *</label><input required type="tel" value={phone} onChange={e => setPhone(e.target.value)} className="w-full border border-neutral-300 p-3 focus:outline-none focus:border-black" placeholder="+91 9876543210" /></div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-2">Phone *</label>
+                    <div className="flex">
+                      <span className="inline-flex items-center px-3 bg-neutral-100 border border-r-0 border-neutral-300 text-sm font-semibold text-neutral-600 select-none">+91</span>
+                      <input required type="tel" maxLength={10} value={phone} onChange={handlePhoneChange} className="w-full border border-neutral-300 p-3 focus:outline-none focus:border-black" placeholder="9876543210" />
+                    </div>
+                  </div>
                   <div><label className="block text-sm font-semibold mb-2">Email *</label><input required type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full border border-neutral-300 p-3 focus:outline-none focus:border-black" placeholder="you@email.com" /></div>
                   <div className="md:col-span-2"><label className="block text-sm font-semibold mb-2">Address Line 1 *</label><input required type="text" value={address1} onChange={e => setAddress1(e.target.value)} className="w-full border border-neutral-300 p-3 focus:outline-none focus:border-black" placeholder="Flat / House No. / Building" /></div>
                   <div className="md:col-span-2"><label className="block text-sm font-semibold mb-2">Address Line 2</label><input type="text" value={address2} onChange={e => setAddress2(e.target.value)} className="w-full border border-neutral-300 p-3 focus:outline-none focus:border-black" placeholder="Street, Sector, Area" /></div>
@@ -207,19 +373,35 @@ export default function CheckoutPage() {
             <div className="lg:w-1/3">
               <div className="bg-neutral-50 p-6 sticky top-8">
                 <h2 className="text-lg font-bold uppercase tracking-wide mb-6">Order Summary</h2>
+                {isValidatingStock && (
+                  <div className="flex items-center gap-2 text-sm text-neutral-500 mb-4">
+                    <Loader2 size={14} className="animate-spin" /> Checking stock availability…
+                  </div>
+                )}
                 <div className="flex flex-col gap-4 mb-6 border-b border-neutral-200 pb-6 max-h-[40vh] overflow-y-auto pr-1">
-                  {items.map(item => (
-                    <div key={item.id} className="flex gap-4">
-                      <div className="w-16 h-16 bg-neutral-200 flex-shrink-0 relative">
-                        {item.imageUrl && <Image src={item.imageUrl.split(',')[0]} alt={item.name} fill className="object-cover" />}
+                  {items.map(item => {
+                    const isOOS = outOfStockItems.includes(item.id);
+                    const imgSrc = item.imageUrl ? item.imageUrl.split(',')[0].trim() : '';
+                    return (
+                      <div key={item.id} className={`flex gap-4 ${isOOS ? 'opacity-50' : ''}`}>
+                        <div className="w-16 h-16 bg-neutral-200 flex-shrink-0 relative overflow-hidden">
+                          {imgSrc && <img src={imgSrc} alt={item.name} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />}
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-bold text-sm leading-tight">{item.name}</h3>
+                          <p className="text-xs text-neutral-500 my-1">Size: {item.size}</p>
+                          {isOOS ? (
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs font-bold text-[#E63946] flex items-center gap-1"><AlertTriangle size={12} /> Out of Stock</span>
+                              <button type="button" onClick={() => removeItem(item.id)} className="text-xs underline text-neutral-500 hover:text-black ml-2">Remove</button>
+                            </div>
+                          ) : (
+                            <span className="font-bold text-sm">{formatCurrency(item.price)}</span>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <h3 className="font-bold text-sm leading-tight">{item.name}</h3>
-                        <p className="text-xs text-neutral-500 my-1">Size: {item.size}</p>
-                        <span className="font-bold text-sm">{formatCurrency(item.price)}</span>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 <div className="space-y-3 mb-6 text-sm">
                   <div className="flex justify-between"><span className="text-neutral-600">Subtotal</span><span className="font-semibold">{formatCurrency(subtotal)}</span></div>

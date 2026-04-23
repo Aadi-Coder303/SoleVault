@@ -24,9 +24,11 @@ export default function ProductCard({ id, name, price, originalPrice, imageUrl, 
   const { toggleItem, hasItem } = useWishlistStore();
   const { addItem } = useCartStore();
   const [mounted, setMounted] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
 
   // Extract available sizes from JSON object
   const availableSizes = sizes ? Object.keys(sizes).filter(size => sizes[size] > 0) : [];
+  const totalStock = sizes ? Object.values(sizes).reduce((a, b) => a + b, 0) : 0;
 
   useEffect(() => {
     setMounted(true);
@@ -61,34 +63,64 @@ export default function ProductCard({ id, name, price, originalPrice, imageUrl, 
   const isWishlisted = mounted && hasItem(id);
 
   return (
-    <div className="group relative flex flex-col bg-white border border-transparent hover:border-neutral-200 hover:shadow-lg transition-all duration-300">
+    <div className="group relative flex flex-col bg-white border border-transparent hover:border-neutral-200 hover:shadow-xl transition-all duration-300 ease-out-expo">
       
       {/* Wishlist Icon */}
       <button 
         onClick={handleWishlist}
         className={twMerge(
-          "absolute top-3 right-3 z-10 hover:scale-110 transition-transform",
-          isWishlisted ? "text-[#E63946]" : "text-neutral-400 hover:text-[#E63946]"
+          "absolute top-2 right-2 sm:top-3 sm:right-3 z-10 p-1.5 rounded-full bg-white/80 backdrop-blur-sm hover:scale-110 active:scale-95 transition-all duration-200",
+          isWishlisted ? "text-[#E63946] shadow-sm" : "text-neutral-400 hover:text-[#E63946]"
         )}
       >
-        <Heart size={20} className={isWishlisted ? "fill-current" : ""} />
+        <Heart size={16} className={twMerge("sm:w-5 sm:h-5", isWishlisted ? "fill-current" : "")} />
       </button>
+
+      {/* Out of stock badge */}
+      {totalStock === 0 && (
+        <div className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 bg-neutral-900/90 text-white text-[9px] sm:text-[10px] font-bold uppercase tracking-wider px-2 py-1 animate-fade-in">
+          Sold Out
+        </div>
+      )}
+
+      {/* Low stock badge */}
+      {totalStock > 0 && totalStock <= 3 && (
+        <div className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 bg-[#E63946] text-white text-[9px] sm:text-[10px] font-bold uppercase tracking-wider px-2 py-1 animate-pulse-fast">
+          Only {totalStock} left
+        </div>
+      )}
 
       {/* Image Area */}
       <Link href={`/products/${id}`} className="block relative aspect-square bg-neutral-100 overflow-hidden">
         <div className="absolute inset-0 flex items-center justify-center text-neutral-400">
-          {imageUrl ? <img src={imageUrl} alt={name} className="object-cover w-full h-full" /> : <span>Image Placeholder</span>}
+          {imageUrl ? (
+            <>
+              {!imgLoaded && <div className="absolute inset-0 shimmer" />}
+              <img 
+                src={imageUrl.split(',')[0].trim()} 
+                alt={name} 
+                className={twMerge(
+                  "object-cover w-full h-full group-hover:scale-105 transition-transform duration-500 ease-out",
+                  imgLoaded ? "opacity-100" : "opacity-0"
+                )}
+                onLoad={() => setImgLoaded(true)}
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              />
+            </>
+          ) : (
+            <span className="text-xs uppercase tracking-wider">No Image</span>
+          )}
         </div>
         
         {/* Quick Add CTA on Hover */}
-        <div className="absolute bottom-0 left-0 w-full p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out">
+        <div className="absolute bottom-0 left-0 w-full p-2 sm:p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out-expo">
           {showSizes ? (
-            <div className="bg-white/95 backdrop-blur-sm border border-black p-2 flex gap-2 justify-center" onClick={(e) => e.preventDefault()}>
+            <div className="bg-white/95 backdrop-blur-sm border border-black p-2 flex gap-1 sm:gap-2 justify-center flex-wrap animate-scale-in" onClick={(e) => e.preventDefault()}>
               {availableSizes.length > 0 ? availableSizes.map((size) => (
                 <button
                   key={size}
                   onClick={(e) => handleSizeSelect(e, size)}
-                  className="px-2 py-1 border border-neutral-300 text-xs font-bold hover:bg-black hover:text-white transition-colors"
+                  className="px-1.5 py-1 sm:px-2 border border-neutral-300 text-[10px] sm:text-xs font-bold hover:bg-black hover:text-white transition-colors duration-150 btn-press"
                 >
                   {size.replace('UK ', '')}
                 </button>
@@ -97,7 +129,7 @@ export default function ProductCard({ id, name, price, originalPrice, imageUrl, 
               )}
               <button 
                 onClick={(e) => { e.preventDefault(); setShowSizes(false); }}
-                className="px-2 py-1 text-xs text-neutral-400 hover:text-black ml-1"
+                className="px-2 py-1 text-xs text-neutral-400 hover:text-black ml-1 transition-colors"
               >
                 ✕
               </button>
@@ -106,29 +138,29 @@ export default function ProductCard({ id, name, price, originalPrice, imageUrl, 
             <button 
               onClick={handleQuickAddClick}
               disabled={availableSizes.length === 0}
-              className="w-full bg-white/90 backdrop-blur-sm border border-black text-black py-3 text-sm font-bold uppercase tracking-wider hover:bg-[#E63946] hover:border-[#E63946] hover:text-white transition-colors disabled:opacity-50 disabled:hover:bg-white/90 disabled:hover:text-black disabled:hover:border-black"
+              className="w-full bg-white/90 backdrop-blur-sm border border-black text-black py-2 sm:py-3 text-xs sm:text-sm font-bold uppercase tracking-wider hover:bg-[#E63946] hover:border-[#E63946] hover:text-white transition-all duration-200 disabled:opacity-50 disabled:hover:bg-white/90 disabled:hover:text-black disabled:hover:border-black btn-press"
             >
-              {availableSizes.length === 0 ? 'Out of Stock' : 'Quick Add'}
+              {availableSizes.length === 0 ? 'Sold Out' : 'Quick Add'}
             </button>
           )}
         </div>
       </Link>
 
       {/* Info Area */}
-      <div className="p-4 flex flex-col gap-1">
-        <div className="flex items-center gap-1 mb-1 text-neutral-500">
-          <Star size={12} className="fill-current text-yellow-400" />
-          <span className="text-xs">{rating} ({reviewCount})</span>
+      <div className="p-3 sm:p-4 flex flex-col gap-0.5 sm:gap-1">
+        <div className="flex items-center gap-1 mb-0.5 sm:mb-1 text-neutral-500">
+          <Star size={11} className="fill-current text-yellow-400 sm:w-3 sm:h-3" />
+          <span className="text-[10px] sm:text-xs">{rating} ({reviewCount})</span>
         </div>
         
         <Link href={`/products/${id}`}>
-          <h3 className="font-semibold text-black truncate group-hover:underline underline-offset-2">{name}</h3>
+          <h3 className="font-semibold text-xs sm:text-sm text-black truncate group-hover:text-[#E63946] transition-colors duration-200">{name}</h3>
         </Link>
         
-        <div className="flex items-center gap-2 mt-1">
-          <span className="font-bold">{formatCurrency(price)}</span>
+        <div className="flex items-center gap-2 mt-0.5 sm:mt-1">
+          <span className="font-bold text-sm sm:text-base">{formatCurrency(price)}</span>
           {originalPrice && (
-            <span className="text-sm text-neutral-400 line-through">{formatCurrency(originalPrice)}</span>
+            <span className="text-xs sm:text-sm text-neutral-400 line-through">{formatCurrency(originalPrice)}</span>
           )}
         </div>
       </div>

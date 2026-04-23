@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 
 const messages = [
@@ -12,6 +12,20 @@ const messages = [
 export default function AnnouncementBar() {
   const [visible, setVisible] = useState(true);
   const [idx, setIdx] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  // Auto-rotate messages every 4 seconds
+  useEffect(() => {
+    if (!visible) return;
+    const interval = setInterval(() => {
+      setIsAnimating(true);
+      setTimeout(() => {
+        setIdx((i) => (i + 1) % messages.length);
+        setIsAnimating(false);
+      }, 200);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [visible]);
 
   if (!visible) return null;
 
@@ -20,15 +34,31 @@ export default function AnnouncementBar() {
       <div className="container mx-auto px-4 h-9 flex items-center justify-between gap-4">
         <div className="flex-1 flex items-center justify-center gap-6 overflow-hidden">
           <button
-            onClick={() => setIdx((i) => (i - 1 + messages.length) % messages.length)}
+            onClick={() => {
+              setIsAnimating(true);
+              setTimeout(() => {
+                setIdx((i) => (i - 1 + messages.length) % messages.length);
+                setIsAnimating(false);
+              }, 200);
+            }}
             className="text-white/40 hover:text-white transition-colors shrink-0 hidden sm:block"
             aria-label="Previous message"
           >
             ‹
           </button>
-          <span className="truncate text-center">{messages[idx]}</span>
+          <span 
+            className={`truncate text-center transition-all duration-200 ${isAnimating ? 'opacity-0 translate-y-1' : 'opacity-100 translate-y-0'}`}
+          >
+            {messages[idx]}
+          </span>
           <button
-            onClick={() => setIdx((i) => (i + 1) % messages.length)}
+            onClick={() => {
+              setIsAnimating(true);
+              setTimeout(() => {
+                setIdx((i) => (i + 1) % messages.length);
+                setIsAnimating(false);
+              }, 200);
+            }}
             className="text-white/40 hover:text-white transition-colors shrink-0 hidden sm:block"
             aria-label="Next message"
           >
