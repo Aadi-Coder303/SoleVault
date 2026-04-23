@@ -1,12 +1,25 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
+import { useCartStore } from '@/store/useCartStore';
+import { formatCurrency } from '@/lib/formatCurrency';
+import Image from 'next/image';
+import Link from 'next/link';
 
 export default function CheckoutPage() {
   const [pincode, setPincode] = useState('');
   const [city, setCity] = useState('');
   const [stateName, setStateName] = useState('');
   const [isFetchingPin, setIsFetchingPin] = useState(false);
+  
+  const { items } = useCartStore();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const subtotal = items.reduce((sum, item) => sum + item.price, 0);
 
   const handlePincodeChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value.replace(/\D/g, ''); // Only allow numbers
@@ -40,11 +53,21 @@ export default function CheckoutPage() {
     }
   };
 
+  if (!mounted) return null;
+
   return (
     <main className="container mx-auto px-4 py-8 max-w-5xl">
       <h1 className="text-3xl font-bold uppercase tracking-wide mb-8">Checkout</h1>
       
-      <div className="flex flex-col lg:flex-row gap-12">
+      {items.length === 0 ? (
+        <div className="text-center py-20">
+          <p className="text-neutral-500 mb-6">Your bag is empty.</p>
+          <Link href="/products" className="bg-black text-white px-8 py-3 font-bold uppercase tracking-wider hover:bg-[#E63946] transition-colors">
+            Shop Now
+          </Link>
+        </div>
+      ) : (
+      <div className="flex flex-col-reverse lg:flex-row gap-12">
         <div className="lg:w-2/3 flex flex-col gap-10">
           
           {/* Shipping Address Form (Indian Format) */}
@@ -138,14 +161,18 @@ export default function CheckoutPage() {
           <div className="bg-neutral-50 p-6 sticky top-8">
             <h2 className="text-lg font-bold uppercase tracking-wide mb-6">Order Summary</h2>
             
-            <div className="flex flex-col gap-4 mb-6 border-b border-neutral-200 pb-6">
-              {[1].map(i => (
-                <div key={i} className="flex gap-4">
-                  <div className="w-16 h-16 bg-neutral-200 flex-shrink-0"></div>
+            <div className="flex flex-col gap-4 mb-6 border-b border-neutral-200 pb-6 max-h-[40vh] overflow-y-auto pr-2">
+              {items.map(item => (
+                <div key={item.id} className="flex gap-4">
+                  <div className="w-16 h-16 bg-neutral-200 flex-shrink-0 relative">
+                    {item.imageUrl ? (
+                      <Image src={item.imageUrl.split(',')[0]} alt={item.name} fill className="object-cover" />
+                    ) : null}
+                  </div>
                   <div className="flex-1">
-                    <h3 className="font-bold text-sm">Air Jordan 1 High OG</h3>
-                    <p className="text-xs text-neutral-500 mb-1">UK 9  x  1</p>
-                    <span className="font-bold text-sm">₹16,500</span>
+                    <h3 className="font-bold text-sm leading-tight">{item.name}</h3>
+                    <p className="text-xs text-neutral-500 my-1">Size: {item.size}</p>
+                    <span className="font-bold text-sm">{formatCurrency(item.price)}</span>
                   </div>
                 </div>
               ))}
@@ -154,7 +181,7 @@ export default function CheckoutPage() {
             <div className="space-y-4 mb-6">
               <div className="flex justify-between text-sm">
                 <span className="text-neutral-600">Subtotal</span>
-                <span className="font-semibold">₹16,500</span>
+                <span className="font-semibold">{formatCurrency(subtotal)}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-neutral-600">Shipping</span>
@@ -164,11 +191,12 @@ export default function CheckoutPage() {
             
             <div className="border-t border-neutral-200 pt-4 flex justify-between items-center">
               <span className="font-bold uppercase tracking-wide">Total</span>
-              <span className="text-xl font-bold">₹16,500</span>
+              <span className="text-xl font-bold">{formatCurrency(subtotal)}</span>
             </div>
           </div>
         </div>
       </div>
+      )}
     </main>
   );
 }
