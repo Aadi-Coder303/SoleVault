@@ -1,4 +1,45 @@
+'use client';
+import { useState } from 'react';
+import { Loader2 } from 'lucide-react';
+
 export default function CheckoutPage() {
+  const [pincode, setPincode] = useState('');
+  const [city, setCity] = useState('');
+  const [stateName, setStateName] = useState('');
+  const [isFetchingPin, setIsFetchingPin] = useState(false);
+
+  const handlePincodeChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.replace(/\D/g, ''); // Only allow numbers
+    setPincode(val);
+
+    if (val.length === 6) {
+      setIsFetchingPin(true);
+      try {
+        const res = await fetch(`https://api.postalpincode.in/pincode/${val}`);
+        const data = await res.json();
+        
+        if (data[0].Status === 'Success') {
+          // The API returns District (City) and State
+          setCity(data[0].PostOffice[0].District);
+          setStateName(data[0].PostOffice[0].State);
+        } else {
+          setCity('');
+          setStateName('');
+        }
+      } catch (error) {
+        console.error('Failed to fetch pincode data:', error);
+      } finally {
+        setIsFetchingPin(false);
+      }
+    } else {
+      // Clear auto-filled values if they backspace
+      if (city || stateName) {
+        setCity('');
+        setStateName('');
+      }
+    }
+  };
+
   return (
     <main className="container mx-auto px-4 py-8 max-w-5xl">
       <h1 className="text-3xl font-bold uppercase tracking-wide mb-8">Checkout</h1>
@@ -26,22 +67,41 @@ export default function CheckoutPage() {
                 <label className="block text-sm font-semibold mb-2">Address Line 2 (Optional)</label>
                 <input type="text" className="w-full border border-neutral-300 p-3 focus:outline-none focus:border-black" placeholder="Street, Sector, Area" />
               </div>
-              <div>
+              <div className="relative">
                 <label className="block text-sm font-semibold mb-2">Pincode</label>
-                <input type="text" maxLength={6} className="w-full border border-neutral-300 p-3 focus:outline-none focus:border-black" placeholder="400001" />
+                <input 
+                  type="text" 
+                  maxLength={6} 
+                  value={pincode}
+                  onChange={handlePincodeChange}
+                  className="w-full border border-neutral-300 p-3 focus:outline-none focus:border-black" 
+                  placeholder="400001" 
+                />
+                {isFetchingPin && (
+                  <div className="absolute right-3 top-10 text-neutral-400">
+                    <Loader2 size={18} className="animate-spin" />
+                  </div>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-semibold mb-2">City</label>
-                <input type="text" className="w-full border border-neutral-300 p-3 focus:outline-none focus:border-black" placeholder="Mumbai" />
+                <input 
+                  type="text" 
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  className="w-full border border-neutral-300 p-3 focus:outline-none focus:border-black" 
+                  placeholder="Mumbai" 
+                />
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-semibold mb-2">State</label>
-                <select className="w-full border border-neutral-300 p-3 focus:outline-none focus:border-black bg-white">
-                  <option>Maharashtra</option>
-                  <option>Delhi</option>
-                  <option>Karnataka</option>
-                  {/* Additional states will be dynamically rendered later */}
-                </select>
+                <input 
+                  type="text" 
+                  value={stateName}
+                  onChange={(e) => setStateName(e.target.value)}
+                  className="w-full border border-neutral-300 p-3 focus:outline-none focus:border-black bg-white" 
+                  placeholder="Maharashtra"
+                />
               </div>
             </form>
           </section>
