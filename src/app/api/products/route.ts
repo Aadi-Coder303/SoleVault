@@ -7,9 +7,12 @@ export async function GET() {
       orderBy: { createdAt: 'desc' },
     });
     return NextResponse.json(products);
-  } catch (error) {
-    console.error('Failed to fetch products:', error);
-    return NextResponse.json({ error: 'Failed to fetch products' }, { status: 500 });
+  } catch (error: any) {
+    console.error('Failed to fetch products:', error)
+    return NextResponse.json(
+      { error: 'Failed to fetch products', details: error?.message || String(error) },
+      { status: 500 }
+    )
   }
 }
 
