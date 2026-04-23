@@ -9,10 +9,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'URL is required' }, { status: 400 });
     }
 
-    // Fetch the HTML content
+    // Improved headers to help bypass basic blocks like Adidas
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Cache-Control': 'no-cache',
       },
     });
 
@@ -28,7 +31,22 @@ export async function POST(req: Request) {
     // Extract Open Graph Data
     const title = $('meta[property="og:title"]').attr('content') || $('title').text() || '';
     const description = $('meta[property="og:description"]').attr('content') || $('meta[name="description"]').attr('content') || '';
-    const image = $('meta[property="og:image"]').attr('content') || '';
+    let ogImage = $('meta[property="og:image"]').attr('content') || '';
+
+    // Extract all potential product images from img tags
+    let images: string[] = [];
+    $('img').each((i, el) => {
+      const src = $(el).attr('src') || $(el).attr('data-src');
+      if (src && src.startsWith('http') && !src.includes('.svg') && !src.includes('icon') && !src.includes('logo')) {
+        if (!images.includes(src)) images.push(src);
+      }
+    });
+
+    // Ensure the main OG image is the first one
+    if (ogImage) {
+      images = images.filter(img => img !== ogImage);
+      images.unshift(ogImage);
+    }
 
     // Attempt to extract brand from title or URL
     let brand = '';
@@ -36,7 +54,7 @@ export async function POST(req: Request) {
     const lowercaseUrl = url.toLowerCase();
     
     if (lowercaseTitle.includes('nike') || lowercaseUrl.includes('nike.com')) brand = 'Nike';
-    else if (lowercaseTitle.includes('adidas') || lowercaseUrl.includes('adidas.com')) brand = 'Adidas';
+    else if (lowercaseTitle.includes('adidas') || lowercaseUrl.includes('adidas.com') || lowercaseUrl.includes('adidas.co')) brand = 'Adidas';
     else if (lowercaseTitle.includes('jordan')) brand = 'Jordan';
     else if (lowercaseTitle.includes('new balance') || lowercaseUrl.includes('newbalance.com')) brand = 'New Balance';
 
@@ -45,7 +63,8 @@ export async function POST(req: Request) {
       data: {
         title: title.trim(),
         description: description.trim(),
-        image: image.trim(),
+        image: ogImage.trim(),
+        images: images,
         brand,
       }
     });

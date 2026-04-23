@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-
+import { X } from 'lucide-react';
 import { twMerge } from 'tailwind-merge';
 
 interface SizeOption {
@@ -18,6 +18,7 @@ interface SizeSelectorProps {
 export default function SizeSelector({ sizes, onSelect }: SizeSelectorProps) {
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [system, setSystem] = useState<'UK' | 'US' | 'EU'>('UK');
+  const [showSizeGuide, setShowSizeGuide] = useState(false);
 
   const handleSelect = (sizeId: string, available: boolean) => {
     if (!available) return;
@@ -74,9 +75,59 @@ export default function SizeSelector({ sizes, onSelect }: SizeSelectorProps) {
       </div>
       
       {/* Size Guide Link */}
-      <button className="mt-4 text-sm font-semibold underline text-neutral-600 hover:text-black transition-colors">
+      <button 
+        onClick={() => setShowSizeGuide(true)}
+        className="mt-4 text-sm font-semibold underline text-neutral-600 hover:text-black transition-colors"
+      >
         Find My Size
       </button>
+
+      {/* Size Guide Modal */}
+      {showSizeGuide && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white w-full max-w-lg p-6 relative shadow-xl">
+            <button 
+              onClick={() => setShowSizeGuide(false)}
+              className="absolute top-4 right-4 hover:text-[#E63946] transition-colors"
+            >
+              <X size={24} />
+            </button>
+            <h2 className="text-xl font-bold uppercase tracking-wide mb-6">Size Guide</h2>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left border-collapse">
+                <thead>
+                  <tr className="bg-neutral-100 text-neutral-600">
+                    <th className="p-3 border">UK</th>
+                    <th className="p-3 border">US (Men)</th>
+                    <th className="p-3 border">EU</th>
+                    <th className="p-3 border">CM</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ['6', '7', '40', '25'],
+                    ['7', '8', '41', '26'],
+                    ['8', '9', '42.5', '27'],
+                    ['9', '10', '44', '28'],
+                    ['10', '11', '45', '29'],
+                    ['11', '12', '46', '30'],
+                  ].map((row, i) => (
+                    <tr key={i} className="border-b">
+                      {row.map((cell, j) => (
+                        <td key={j} className="p-3 border">{cell}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="text-xs text-neutral-500 mt-4">
+              * This is a general guide. Fits may vary by brand and model. 
+              We recommend checking the manufacturer's specific sizing for Nike, Adidas, or Jordan.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -55,12 +55,16 @@ export default function ProductClient({ product }: { product: ProductData }) {
   // Ensure they are sorted naturally (e.g. 6, 6.5, 7)
   formattedSizes.sort((a, b) => parseFloat(a.label) - parseFloat(b.label));
 
+  // Parse multiple images if stored as comma-separated string
+  const imageUrls = product.imageUrl ? product.imageUrl.split(',') : [];
+  const galleryImages = [...imageUrls, '', '', ''].slice(0, 4);
+
   return (
     <main className="container mx-auto px-4 py-8 lg:py-12 flex flex-col lg:flex-row gap-12">
       {/* Left: Image Gallery */}
       <div className="lg:w-[60%] flex flex-col gap-4">
         <ImageGallery 
-          images={[product.imageUrl || '', '', '', '']} 
+          images={galleryImages} 
           altText={product.name} 
         />
       </div>

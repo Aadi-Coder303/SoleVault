@@ -103,7 +103,7 @@ export default function DashboardPage() {
           name: result.data.title || '',
           brand: result.data.brand || '',
           description: result.data.description || '',
-          imageUrl: result.data.image || '',
+          imageUrl: (result.data.images && result.data.images.length > 0) ? result.data.images.slice(0, 4).join(',') : (result.data.image || ''),
         });
         alert('Data fetched successfully! Review details and set sizes.');
       } else {

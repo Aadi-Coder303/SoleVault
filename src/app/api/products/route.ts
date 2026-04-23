@@ -39,7 +39,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { name, brand, description, price, imageUrl, sizes, category } = body;
 
-    if (!name || !price) {
+    if (!name || price === undefined || price === null) {
       return NextResponse.json({ error: 'Name and price are required' }, { status: 400 });
     }
 
@@ -48,7 +48,7 @@ export async function POST(req: Request) {
         name,
         brand: brand || 'Unknown',
         description: description || '',
-        price: parseFloat(price.toString()),
+        price: parseFloat(String(price)),
         imageUrl: imageUrl || null,
         category: category || 'Men',
         sizes: sizes || {},
@@ -71,14 +71,18 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: 'Product ID is required for update' }, { status: 400 });
     }
 
+    if (price === undefined || price === null) {
+      return NextResponse.json({ error: 'Price is required' }, { status: 400 });
+    }
+
     const product = await prisma.product.update({
       where: { id },
       data: {
         name,
         brand,
         description,
-        price: parseFloat(price.toString()),
-        imageUrl,
+        price: parseFloat(String(price)),
+        imageUrl: imageUrl || null,
         category,
         sizes,
       },
@@ -88,5 +92,23 @@ export async function PUT(req: Request) {
   } catch (error) {
     console.error('Failed to update product:', error);
     return NextResponse.json({ error: 'Failed to update product' }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: 'Product ID is required' }, { status: 400 });
+    }
+
+    await prisma.product.delete({ where: { id } });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Failed to delete product:', error);
+    return NextResponse.json({ error: 'Failed to delete product' }, { status: 500 });
   }
 }
