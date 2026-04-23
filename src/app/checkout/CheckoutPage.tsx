@@ -6,6 +6,7 @@ import { formatCurrency } from '@/lib/formatCurrency';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { createClient } from '@/utils/supabase/client';
 
 interface SavedAddress {
   name?: string;
@@ -92,6 +93,22 @@ export default function CheckoutPage() {
     if (searchParams.get('payment_failed') === 'true') {
       toast.error('Payment failed or was cancelled. Please try again.');
     }
+
+    // Auto-fill name & email from auth session
+    const supabase = createClient();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        const meta = session.user.user_metadata;
+        if (meta?.full_name && !fullName) setFullName(meta.full_name);
+        else if (meta?.name && !fullName) setFullName(meta.name);
+        if (session.user.email && !email) setEmail(session.user.email);
+        if (session.user.phone) {
+          const digits = session.user.phone.replace(/^\+91/, '');
+          if (!phone && digits.length === 10) setPhone(digits);
+        }
+      }
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   useEffect(() => {

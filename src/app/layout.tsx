@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import BuyerShell from "@/components/BuyerShell";
+import AuthSync from "@/components/AuthSync";
 import { Toaster } from "react-hot-toast";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -21,6 +22,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.className} min-h-screen flex flex-col antialiased text-black bg-white`}>
         <Navbar />
+        <AuthSync />
         <BuyerShell>
           <div className="flex-1">
             {children}
