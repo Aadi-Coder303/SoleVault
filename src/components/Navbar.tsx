@@ -1,0 +1,145 @@
+'use client';
+
+import Link from 'next/link';
+import { Search, Heart, ShoppingBag, Menu, User, LogOut } from 'lucide-react';
+import { useCartStore } from '@/store/useCartStore';
+import { useEffect, useState } from 'react';
+import { createClient } from '@/utils/supabase/client';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
+import { useRouter } from 'next/navigation';
+
+export default function Navbar() {
+  const [user, setUser] = useState<SupabaseUser | { email: string, role: string } | null>(null);
+  const getTotalItems = useCartStore(state => state.getTotalItems);
+  const [mounted, setMounted] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const router = useRouter();
+  const supabase = createClient();
+
+  useEffect(() => {
+    setMounted(true);
+    
+    // Check for dev session cookie
+    const isDevOwner = document.cookie.includes('dev_session=owner');
+    const isDevBuyer = document.cookie.includes('dev_session=buyer');
+    
+    if (isDevOwner) {
+      setUser({ email: 'owner@dev.com', role: 'owner' });
+    } else if (isDevBuyer) {
+      setUser({ email: 'buyer@dev.com', role: 'buyer' });
+    } else {
+      // Check active Supabase session
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        setUser(session?.user ?? null);
+      });
+    }
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!isDevOwner && !isDevBuyer) {
+        setUser(session?.user ?? null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [supabase.auth]);
+
+  const handleSignOut = async () => {
+    // Clear dev cookie
+    document.cookie = "dev_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    await supabase.auth.signOut();
+    setUser(null);
+    router.push('/');
+  };
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      setShowSearch(false);
+      router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
+    }
+  };
+
+  return (
+    <header className="sticky top-0 z-50 w-full bg-white border-b border-neutral-200">
+      <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+        
+        {/* Mobile Menu & Logo */}
+        <div className="flex items-center gap-4">
+          <button className="md:hidden hover:text-[#E63946] transition-colors">
+            <Menu size={24} />
+          </button>
+          <Link href="/" className="text-2xl font-bold tracking-widest uppercase">
+            SOLE VAULT
+          </Link>
+        </div>
+
+        {/* Desktop Nav Links */}
+        <nav className="hidden md:flex gap-8">
+          <Link href="/products?category=men" className="text-sm uppercase tracking-[0.08em] font-medium text-neutral-500 hover:text-black hover:underline underline-offset-4 transition-all">Men</Link>
+          <Link href="/products?category=women" className="text-sm uppercase tracking-[0.08em] font-medium text-neutral-500 hover:text-black hover:underline underline-offset-4 transition-all">Women</Link>
+          <Link href="/products?category=kids" className="text-sm uppercase tracking-[0.08em] font-medium text-neutral-500 hover:text-black hover:underline underline-offset-4 transition-all">Kids</Link>
+          <Link href="/products?category=sale" className="text-sm uppercase tracking-[0.08em] font-bold text-[#E63946] hover:text-black hover:underline underline-offset-4 transition-all">Sale</Link>
+        </nav>
+
+        {/* Icons */}
+        <div className="flex items-center gap-5">
+          <div className="relative">
+            <button 
+              onClick={() => setShowSearch(!showSearch)} 
+              aria-label="Search" 
+              className="hover:text-[#E63946] transition-colors mt-1"
+            >
+              <Search size={20} />
+            </button>
+            
+            {showSearch && (
+              <div className="absolute top-8 right-0 bg-white border border-neutral-200 p-2 shadow-lg w-64 md:w-80">
+                <form onSubmit={handleSearchSubmit} className="flex gap-2">
+                  <input 
+                    type="text" 
+                    autoFocus
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search for sneakers..." 
+                    className="w-full border border-neutral-300 p-2 text-sm focus:outline-none focus:border-black"
+                  />
+                  <button type="submit" className="bg-black text-white px-3 text-xs font-bold uppercase hover:bg-[#E63946]">Go</button>
+                </form>
+              </div>
+            )}
+          </div>
+          <Link href="/wishlist" aria-label="Wishlist" className="hover:text-[#E63946] transition-colors relative hidden sm:block">
+            <Heart size={20} />
+          </Link>
+          <Link href="/cart" aria-label="Cart" className="hover:text-[#E63946] transition-colors relative">
+            <ShoppingBag size={20} />
+            {mounted && getTotalItems() > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 bg-[#E63946] text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center shadow-sm">
+                {getTotalItems()}
+              </span>
+            )}
+          </Link>
+          <div className="hidden sm:block">
+            {mounted && !user && (
+              <Link href="/login" className="text-sm font-bold uppercase tracking-wide hover:text-[#E63946]">
+                Log In
+              </Link>
+            )}
+            {mounted && user && (
+              <div className="flex items-center gap-4">
+                <Link href="/dashboard" className="hover:text-[#E63946] transition-colors">
+                  <User size={20} />
+                </Link>
+                <button onClick={handleSignOut} className="hover:text-[#E63946] transition-colors" aria-label="Sign Out">
+                  <LogOut size={20} />
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+}
