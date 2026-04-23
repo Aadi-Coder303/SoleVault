@@ -24,4 +24,22 @@ model Product {
   sizes       Json     @default("{}")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  orders      Order[]
+}
+
+model Order {
+  id          String   @id @default(uuid())
+  txnid       String   @unique
+  status      String   @default("pending") // pending | paid | failed | cod_pending
+  amount      Float
+  customerName String
+  customerEmail String
+  customerPhone String
+  address     String
+  items       Json     // [{ productId, name, size, price, qty }]
+  payuResponse Json?   // raw PayU callback payload
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  product     Product? @relation(fields: [productId], references: [id])
+  productId   String?
 }

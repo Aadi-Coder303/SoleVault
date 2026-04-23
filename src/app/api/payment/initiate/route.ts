@@ -1,10 +1,19 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
+import prisma from '@/lib/prisma';
+
+interface CartItem {
+  productId: string;
+  name: string;
+  size: string;
+  price: number;
+  imageUrl?: string;
+}
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { amount, productinfo, firstname, email, phone, address } = body;
+    const { amount, productinfo, firstname, email, phone, address, items } = body;
 
     if (!amount || !productinfo || !firstname || !email) {
       return NextResponse.json({ error: 'Missing required payment fields' }, { status: 400 });
@@ -14,10 +23,23 @@ export async function POST(req: Request) {
     const salt = process.env.PAYU_MERCHANT_SALT!;
     const payuBase = process.env.PAYU_BASE_URL!;
 
-    // Generate a unique transaction ID
     const txnid = `SV-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
-    // PayU hash format: key|txnid|amount|productinfo|firstname|email|udf1|udf2|udf3|udf4|udf5||||||salt
+    // Save a pending order to DB so we can track it on callback
+    await prisma.order.create({
+      data: {
+        txnid,
+        status: 'pending',
+        amount: parseFloat(amount),
+        customerName: firstname,
+        customerEmail: email,
+        customerPhone: phone || '',
+        address: address || '',
+        items: items || [],
+      },
+    });
+
+    // PayU SHA-512 hash
     const hashString = `${key}|${txnid}|${amount}|${productinfo}|${firstname}|${email}|||||||||||${salt}`;
     const hash = crypto.createHash('sha512').update(hashString).digest('hex');
 

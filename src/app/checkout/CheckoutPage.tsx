@@ -85,8 +85,24 @@ export default function CheckoutPage() {
     }
     if (items.length === 0) { toast.error('Your bag is empty.'); return; }
 
+    const fullAddress = `${address1}${address2 ? ', ' + address2 : ''}, ${city}, ${stateName} - ${pincode}`;
+
     if (paymentMethod === 'cod') {
-      toast.success('Order placed! We will confirm via SMS shortly.'); return;
+      // Save COD order to DB — inventory will stay until owner confirms
+      try {
+        await fetch('/api/orders/cod', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fullName, email, phone,
+            address: fullAddress,
+            amount: subtotal,
+            items: items.map(i => ({ productId: i.productId, name: i.name, size: i.size, price: i.price, qty: 1 })),
+          }),
+        });
+      } catch { /* non-blocking */ }
+      toast.success('Order placed! We will confirm via SMS shortly.');
+      return;
     }
 
     setIsInitiatingPayment(true);
@@ -95,7 +111,16 @@ export default function CheckoutPage() {
       const res = await fetch('/api/payment/initiate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: subtotal.toFixed(2), productinfo, firstname: fullName.split(' ')[0], email, phone }),
+        body: JSON.stringify({
+          amount: subtotal.toFixed(2),
+          productinfo,
+          firstname: fullName.split(' ')[0],
+          email,
+          phone,
+          address: fullAddress,
+          // Pass full items so success route can decrement stock
+          items: items.map(i => ({ productId: i.productId, name: i.name, size: i.size, price: i.price, qty: 1 })),
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to initiate payment');
