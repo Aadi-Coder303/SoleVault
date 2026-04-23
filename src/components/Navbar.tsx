@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Search, Heart, ShoppingBag, Menu, User, LogOut, X } from 'lucide-react';
+import { Search, Heart, ShoppingBag, Menu, User, LogOut, X, Package } from 'lucide-react';
 import { useCartStore } from '@/store/useCartStore';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
@@ -125,7 +125,7 @@ export default function Navbar() {
               </span>
             )}
           </Link>
-          {/* Desktop auth (hidden on mobile — shown in mobile menu instead) */}
+          {/* Desktop auth */}
           <div className="hidden sm:block">
             {mounted && !user && (
               <Link href="/login" className="text-sm font-bold uppercase tracking-wide hover:text-[#E63946]">
@@ -134,6 +134,9 @@ export default function Navbar() {
             )}
             {mounted && user && (
               <div className="flex items-center gap-4">
+                <Link href="/orders" className="hover:text-[#E63946] transition-colors" aria-label="My Orders">
+                  <Package size={20} />
+                </Link>
                 {user.email && OWNER_EMAILS.includes(user.email) && (
                   <Link href="/dashboard" className="hover:text-[#E63946] transition-colors">
                     <User size={20} />
@@ -173,6 +176,11 @@ export default function Navbar() {
               <Link href="/wishlist" onClick={() => setMobileMenuOpen(false)} className="py-3 px-2 text-sm uppercase tracking-[0.08em] font-medium text-neutral-600 hover:text-black hover:bg-neutral-50 transition-all flex items-center gap-2">
                 <Heart size={16} /> Wishlist
               </Link>
+              {mounted && user && (
+                <Link href="/orders" onClick={() => setMobileMenuOpen(false)} className="py-3 px-2 text-sm uppercase tracking-[0.08em] font-medium text-neutral-600 hover:text-black hover:bg-neutral-50 transition-all flex items-center gap-2">
+                  <Package size={16} /> My Orders
+                </Link>
+              )}
               {mounted && user && user.email && OWNER_EMAILS.includes(user.email) && (
                 <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)} className="py-3 px-2 text-sm uppercase tracking-[0.08em] font-medium text-neutral-600 hover:text-black hover:bg-neutral-50 transition-all flex items-center gap-2">
                   <User size={16} /> Dashboard

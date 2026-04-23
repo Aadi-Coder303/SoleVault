@@ -5,7 +5,7 @@ import { useCartStore } from '@/store/useCartStore';
 import { formatCurrency } from '@/lib/formatCurrency';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 interface SavedAddress {
   name?: string;
@@ -46,21 +46,25 @@ export default function CheckoutPage() {
   const payuFormRef = useRef<HTMLFormElement>(null);
   const [payuParams, setPayuParams] = useState<Record<string, string> | null>(null);
 
-  const { items, removeItem } = useCartStore();
+  const { items, removeItem, clearCart } = useCartStore();
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
 
-  // Validate stock on mount
+  // Validate stock once on mount only
   const validateStock = useCallback(async () => {
-    if (items.length === 0) return;
+    const currentItems = itemsRef.current;
+    if (currentItems.length === 0) return;
     setIsValidatingStock(true);
     try {
-      const productIds = [...new Set(items.map(i => i.productId))];
+      const productIds = [...new Set(currentItems.map(i => i.productId))];
       const res = await fetch(`/api/products?ids=${productIds.join(',')}`);
       if (!res.ok) return;
       const products = await res.json();
 
       const oosIds: string[] = [];
-      for (const item of items) {
+      for (const item of currentItems) {
         const product = products.find((p: any) => p.id === item.productId);
         if (!product) {
           oosIds.push(item.id);
@@ -82,7 +86,7 @@ export default function CheckoutPage() {
     } finally {
       setIsValidatingStock(false);
     }
-  }, [items]);
+  }, []);
 
   useEffect(() => {
     setMounted(true);
@@ -92,10 +96,11 @@ export default function CheckoutPage() {
   }, [searchParams]);
 
   useEffect(() => {
-    if (mounted && items.length > 0) {
+    if (mounted) {
       validateStock();
     }
-  }, [mounted, validateStock]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mounted]);
 
   useEffect(() => {
     if (payuParams && payuFormRef.current) {
@@ -212,7 +217,7 @@ export default function CheckoutPage() {
     if (paymentMethod === 'cod') {
       // Save COD order to DB — inventory will stay until owner confirms
       try {
-        await fetch('/api/orders/cod', {
+        const res = await fetch('/api/orders/cod', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -222,8 +227,13 @@ export default function CheckoutPage() {
             items: validItems.map(i => ({ productId: i.productId, name: i.name, size: i.size, price: i.price, qty: 1 })),
           }),
         });
-      } catch { /* non-blocking */ }
-      toast.success('Order placed! We will confirm via SMS shortly.');
+        const codData = await res.json();
+        clearCart();
+        router.push(`/orders/confirmation?txnid=${codData.txnid || 'COD'}&amount=${subtotal}`);
+        return;
+      } catch {
+        toast.error('Failed to place order. Please try again.');
+      }
       return;
     }
 
