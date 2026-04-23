@@ -6,7 +6,18 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const email = searchParams.get('email');
     const phone = searchParams.get('phone');
+    const all = searchParams.get('all');
 
+    // Dashboard: fetch all orders
+    if (all === 'true') {
+      const orders = await prisma.order.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 200,
+      });
+      return NextResponse.json(orders);
+    }
+
+    // Customer: fetch by email/phone
     if (!email && !phone) {
       return NextResponse.json([], { status: 200 });
     }
@@ -15,7 +26,6 @@ export async function GET(req: Request) {
     if (email) where.OR.push({ customerEmail: email });
     if (phone) where.OR.push({ customerPhone: phone });
 
-    // If no conditions, return empty
     if (where.OR.length === 0) {
       return NextResponse.json([]);
     }

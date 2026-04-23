@@ -5,6 +5,7 @@ import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { twMerge } from 'tailwind-merge';
+import { OWNER_EMAILS } from '@/lib/constants';
 
 export default function LoginPage() {
   const [phone, setPhone] = useState('');
@@ -72,7 +73,13 @@ export default function LoginPage() {
       setError(error.message);
       setLoading(false);
     } else {
-      router.push('/');
+      // Check if user is owner and redirect accordingly
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.email && OWNER_EMAILS.includes(user.email)) {
+        router.push('/dashboard');
+      } else {
+        router.push('/');
+      }
       router.refresh();
     }
   };

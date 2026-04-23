@@ -28,11 +28,10 @@ export default function CheckoutPage() {
   const [city, setCity] = useState('');
   const [stateName, setStateName] = useState('');
   const [isFetchingPin, setIsFetchingPin] = useState(false);
-  const [isCheckingRisk, setIsCheckingRisk] = useState(false);
   const [isInitiatingPayment, setIsInitiatingPayment] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'online' | 'cod'>('online');
-  const [allowCod, setAllowCod] = useState(true);
   const [mounted, setMounted] = useState(false);
+  const [codRequested, setCodRequested] = useState(false);
+  const [isRequestingCod, setIsRequestingCod] = useState(false);
 
   // Stock validation state
   const [outOfStockItems, setOutOfStockItems] = useState<string[]>([]);
@@ -178,24 +177,6 @@ export default function CheckoutPage() {
         if (data[0].Status === 'Success') {
           setCity(data[0].PostOffice[0].District);
           setStateName(data[0].PostOffice[0].State);
-
-          if (phone.length >= 10) {
-            setIsCheckingRisk(true);
-            try {
-              const fullPhone = `+91${phone.replace(/\D/g, '')}`;
-              const riskRes = await fetch('/api/gokwik/risk', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone: fullPhone, pincode: val, amount: subtotal }),
-              });
-              const riskData = await riskRes.json();
-              setAllowCod(riskData.allowCod ?? true);
-              if (!riskData.allowCod) {
-                toast('COD not available for this address.', { icon: 'ℹ️' });
-                setPaymentMethod('online');
-              }
-            } catch { setAllowCod(true); } finally { setIsCheckingRisk(false); }
-          }
         } else { setCity(''); setStateName(''); }
       } catch (err) { console.error(err); } finally { setIsFetchingPin(false); }
     } else { setCity(''); setStateName(''); }
@@ -214,29 +195,7 @@ export default function CheckoutPage() {
     const fullPhone = `+91${phone.replace(/\D/g, '')}`;
     const fullAddress = `${address1}${address2 ? ', ' + address2 : ''}, ${city}, ${stateName} - ${pincode}`;
 
-    if (paymentMethod === 'cod') {
-      // Save COD order to DB — inventory will stay until owner confirms
-      try {
-        const res = await fetch('/api/orders/cod', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            fullName, email, phone: fullPhone,
-            address: fullAddress,
-            amount: subtotal,
-            items: validItems.map(i => ({ productId: i.productId, name: i.name, size: i.size, price: i.price, qty: 1 })),
-          }),
-        });
-        const codData = await res.json();
-        clearCart();
-        router.push(`/orders/confirmation?txnid=${codData.txnid || 'COD'}&amount=${subtotal}`);
-        return;
-      } catch {
-        toast.error('Failed to place order. Please try again.');
-      }
-      return;
-    }
-
+    // All orders are prepaid — online payment only
     setIsInitiatingPayment(true);
     try {
       const productinfo = validItems.map(i => `${i.name} (${i.size})`).join(', ').substring(0, 100);
@@ -345,7 +304,7 @@ export default function CheckoutPage() {
                   <div className="relative">
                     <label className="block text-sm font-semibold mb-2">Pincode *</label>
                     <input required type="text" maxLength={6} value={pincode} onChange={handlePincodeChange} className="w-full border border-neutral-300 p-3 focus:outline-none focus:border-black" placeholder="400001" />
-                    {(isFetchingPin || isCheckingRisk) && <div className="absolute right-3 top-10 text-neutral-400"><Loader2 size={18} className="animate-spin" /></div>}
+                    {isFetchingPin && <div className="absolute right-3 top-10 text-neutral-400"><Loader2 size={18} className="animate-spin" /></div>}
                   </div>
                   <div><label className="block text-sm font-semibold mb-2">City</label><input type="text" value={city} onChange={e => setCity(e.target.value)} className="w-full border border-neutral-300 p-3 focus:outline-none focus:border-black" placeholder="Mumbai" /></div>
                   <div className="md:col-span-2"><label className="block text-sm font-semibold mb-2">State</label><input type="text" value={stateName} onChange={e => setStateName(e.target.value)} className="w-full border border-neutral-300 p-3 focus:outline-none focus:border-black" placeholder="Maharashtra" /></div>
@@ -353,28 +312,56 @@ export default function CheckoutPage() {
               </section>
 
               <section>
-                <h2 className="text-xl font-bold uppercase tracking-wide mb-6 flex items-center gap-2"><CreditCard size={18} /> Payment Method</h2>
+                <h2 className="text-xl font-bold uppercase tracking-wide mb-6 flex items-center gap-2"><CreditCard size={18} /> Payment</h2>
                 <div className="flex flex-col gap-3">
-                  <label className={`flex items-start gap-4 border p-4 cursor-pointer transition-all ${paymentMethod === 'online' ? 'border-black bg-neutral-50' : 'border-neutral-200 hover:border-neutral-400'}`}>
-                    <input type="radio" name="payment" value="online" checked={paymentMethod === 'online'} onChange={() => setPaymentMethod('online')} className="mt-1 accent-black" />
-                    <div>
-                      <p className="font-bold">Online Payment</p>
-                      <p className="text-xs text-neutral-500 mt-0.5">UPI, Credit/Debit Cards, Netbanking, Wallets</p>
-                      <div className="flex gap-2 mt-2 flex-wrap">{['UPI', 'Visa', 'Mastercard', 'RuPay', 'Netbanking'].map(m => <span key={m} className="text-[10px] font-bold uppercase tracking-wide bg-neutral-200 px-2 py-0.5 rounded-sm">{m}</span>)}</div>
+                  <div className="border border-black bg-neutral-50 p-4">
+                    <p className="font-bold">Online Payment (Prepaid)</p>
+                    <p className="text-xs text-neutral-500 mt-0.5">UPI, Credit/Debit Cards, Netbanking, Wallets</p>
+                    <div className="flex gap-2 mt-2 flex-wrap">{['UPI', 'Visa', 'Mastercard', 'RuPay', 'Netbanking'].map(m => <span key={m} className="text-[10px] font-bold uppercase tracking-wide bg-neutral-200 px-2 py-0.5 rounded-sm">{m}</span>)}</div>
+                  </div>
+
+                  {/* Request COD */}
+                  {!codRequested ? (
+                    <button
+                      type="button"
+                      disabled={isRequestingCod || !fullName || !phone || !email || !address1 || !pincode}
+                      onClick={async () => {
+                        if (!fullName || !phone || !email || !address1 || !pincode || !city || !stateName) {
+                          toast.error('Please fill shipping details first.'); return;
+                        }
+                        if (validItems.length === 0) { toast.error('Your bag is empty.'); return; }
+                        setIsRequestingCod(true);
+                        try {
+                          const fullPhone = `+91${phone.replace(/\D/g, '')}`;
+                          const fullAddress = `${address1}${address2 ? ', ' + address2 : ''}, ${city}, ${stateName} - ${pincode}`;
+                          await fetch('/api/orders/cod', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              fullName, email, phone: fullPhone, address: fullAddress, amount: subtotal,
+                              items: validItems.map(i => ({ productId: i.productId, name: i.name, size: i.size, price: i.price, qty: 1 })),
+                              codRequest: true,
+                            }),
+                          });
+                          setCodRequested(true);
+                          toast.success('COD request submitted! We will contact you to confirm.');
+                        } catch { toast.error('Failed to submit request.'); }
+                        finally { setIsRequestingCod(false); }
+                      }}
+                      className="border border-neutral-300 p-4 text-left hover:border-neutral-400 transition-colors disabled:opacity-50"
+                    >
+                      <p className="font-bold text-sm">Request Cash on Delivery</p>
+                      <p className="text-xs text-neutral-500 mt-0.5">Subject to approval · We'll confirm via SMS/WhatsApp</p>
+                      {isRequestingCod && <p className="text-xs text-neutral-400 mt-1 flex items-center gap-1"><Loader2 size={12} className="animate-spin" /> Submitting…</p>}
+                    </button>
+                  ) : (
+                    <div className="border border-green-300 bg-green-50 p-4 text-sm text-green-800 font-semibold">
+                      ✓ COD request submitted — you'll receive a confirmation shortly. Or pay now to confirm instantly.
                     </div>
-                  </label>
-                  {allowCod && (
-                    <label className={`flex items-start gap-4 border p-4 cursor-pointer transition-all ${paymentMethod === 'cod' ? 'border-black bg-neutral-50' : 'border-neutral-200 hover:border-neutral-400'}`}>
-                      <input type="radio" name="payment" value="cod" checked={paymentMethod === 'cod'} onChange={() => setPaymentMethod('cod')} className="mt-1 accent-black" />
-                      <div>
-                        <p className="font-bold">Cash on Delivery</p>
-                        <p className="text-xs text-neutral-500 mt-0.5">Pay when your order arrives · No extra charges</p>
-                        {isCheckingRisk && <p className="text-xs text-neutral-400 mt-1">Checking availability…</p>}
-                      </div>
-                    </label>
                   )}
+
                   <p className="text-xs text-neutral-400 flex items-center gap-1 mt-1">
-                    <ShieldCheck size={12} className="text-green-500" /> Powered by <strong>PayU</strong> &amp; <strong>GoKwik</strong> · 256-bit SSL Secured
+                    <ShieldCheck size={12} className="text-green-500" /> Powered by <strong>PayU</strong> · 256-bit SSL Secured
                   </p>
                 </div>
               </section>
@@ -422,7 +409,7 @@ export default function CheckoutPage() {
                   <span className="text-xl font-bold">{formatCurrency(subtotal)}</span>
                 </div>
                 <button type="submit" disabled={isInitiatingPayment} className="w-full bg-black text-white py-4 font-bold uppercase tracking-wider hover:bg-[#E63946] transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
-                  {isInitiatingPayment ? <><Loader2 size={18} className="animate-spin" /> Redirecting…</> : paymentMethod === 'cod' ? 'Place Order (COD)' : 'Pay Now →'}
+                  {isInitiatingPayment ? <><Loader2 size={18} className="animate-spin" /> Redirecting…</> : 'Pay Now →'}
                 </button>
                 <p className="text-[10px] text-neutral-400 text-center mt-3">By placing your order you agree to our Terms &amp; Privacy Policy</p>
               </div>
