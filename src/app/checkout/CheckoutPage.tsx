@@ -306,8 +306,8 @@ export default function CheckoutPage() {
                     <input required type="text" maxLength={6} value={pincode} onChange={handlePincodeChange} className="w-full border border-neutral-300 p-3 focus:outline-none focus:border-black" placeholder="400001" />
                     {isFetchingPin && <div className="absolute right-3 top-10 text-neutral-400"><Loader2 size={18} className="animate-spin" /></div>}
                   </div>
-                  <div><label className="block text-sm font-semibold mb-2">City</label><input type="text" value={city} onChange={e => setCity(e.target.value)} className="w-full border border-neutral-300 p-3 focus:outline-none focus:border-black" placeholder="Mumbai" /></div>
-                  <div className="md:col-span-2"><label className="block text-sm font-semibold mb-2">State</label><input type="text" value={stateName} onChange={e => setStateName(e.target.value)} className="w-full border border-neutral-300 p-3 focus:outline-none focus:border-black" placeholder="Maharashtra" /></div>
+                  <div><label className="block text-sm font-semibold mb-2">City</label><input type="text" readOnly value={city} className="w-full border border-neutral-300 p-3 focus:outline-none bg-neutral-50 text-neutral-700 cursor-not-allowed" placeholder="Auto-filled from pincode" /></div>
+                  <div className="md:col-span-2"><label className="block text-sm font-semibold mb-2">State</label><input type="text" readOnly value={stateName} className="w-full border border-neutral-300 p-3 focus:outline-none bg-neutral-50 text-neutral-700 cursor-not-allowed" placeholder="Auto-filled from pincode" /></div>
                 </div>
               </section>
 
@@ -352,6 +352,7 @@ export default function CheckoutPage() {
                     >
                       <p className="font-bold text-sm">Request Cash on Delivery</p>
                       <p className="text-xs text-neutral-500 mt-0.5">Subject to approval · We'll confirm via SMS/WhatsApp</p>
+                      <p className="text-[11px] text-amber-600 mt-1.5 font-medium">⚠ Stock is not reserved for COD requests. Items may go out of stock before approval.</p>
                       {isRequestingCod && <p className="text-xs text-neutral-400 mt-1 flex items-center gap-1"><Loader2 size={12} className="animate-spin" /> Submitting…</p>}
                     </button>
                   ) : (
