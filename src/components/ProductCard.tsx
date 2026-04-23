@@ -7,6 +7,7 @@ import { useWishlistStore } from '@/store/useWishlistStore';
 import { useCartStore } from '@/store/useCartStore';
 import { useState, useEffect } from 'react';
 import { twMerge } from 'tailwind-merge';
+import toast from 'react-hot-toast';
 
 interface ProductCardProps {
   id: string;
@@ -48,7 +49,7 @@ export default function ProductCard({ id, name, price, originalPrice, imageUrl, 
       size,
       imageUrl: imageUrl || '',
     });
-    alert(`Added size ${size} to bag!`);
+    toast.success(`Added size ${size} to bag!`);
     setShowSizes(false);
   };
 

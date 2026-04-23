@@ -7,6 +7,7 @@ import { useWishlistStore } from '@/store/useWishlistStore';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { useState, useEffect } from 'react';
 import { Heart } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 interface ProductData {
   id: string;
@@ -29,7 +30,7 @@ export default function ProductClient({ product }: { product: ProductData }) {
   }, []);
 
   const handleAddToCart = () => {
-    if (!selectedSize) return alert('Please select a size first.');
+    if (!selectedSize) return toast.error('Please select a size first.');
     
     addItem({
       id: `${product.id}-${selectedSize}`,
@@ -40,7 +41,7 @@ export default function ProductClient({ product }: { product: ProductData }) {
       imageUrl: product.imageUrl || '',
     });
     
-    alert('Added to bag!');
+    toast.success('Added to bag!');
   };
 
   // Convert JSON sizes from Prisma to the format expected by SizeSelector

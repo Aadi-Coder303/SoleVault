@@ -6,6 +6,7 @@ import { twMerge } from 'tailwind-merge';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import { OWNER_EMAILS } from '@/lib/constants';
+import toast from 'react-hot-toast';
 
 const MEN_SIZES = ['UK 6', 'UK 6.5', 'UK 7', 'UK 7.5', 'UK 8', 'UK 8.5', 'UK 9', 'UK 9.5', 'UK 10', 'UK 10.5', 'UK 11', 'UK 12'];
 const WOMEN_SIZES = ['UK 3', 'UK 3.5', 'UK 4', 'UK 4.5', 'UK 5', 'UK 5.5', 'UK 6', 'UK 6.5', 'UK 7', 'UK 7.5', 'UK 8'];
@@ -88,7 +89,7 @@ export default function DashboardPage() {
   }, [supabase.auth, router]);
 
   const handleScrape = async () => {
-    if (!url) return alert('Please enter a URL first.');
+    if (!url) return toast.error('Please enter a URL first.');
     setIsScraping(true);
     try {
       const res = await fetch('/api/scrape', {
@@ -105,12 +106,12 @@ export default function DashboardPage() {
           description: result.data.description || '',
           imageUrl: (result.data.images && result.data.images.length > 0) ? result.data.images.slice(0, 4).join(',') : (result.data.image || ''),
         });
-        alert('Data fetched successfully! Review details and set sizes.');
+        toast.success('Data fetched successfully! Review details and set sizes.');
       } else {
-        alert(result.error || 'Failed to fetch data.');
+        toast.error(result.error || 'Failed to fetch data.');
       }
     } catch {
-      alert('An error occurred while fetching the data.');
+      toast.error('An error occurred while fetching the data.');
     } finally {
       setIsScraping(false);
     }
@@ -148,7 +149,7 @@ export default function DashboardPage() {
 
       if (!res.ok) throw new Error('Failed to save product');
 
-      alert(`Product ${editingId ? 'updated' : 'added'} successfully!`);
+      toast.success(`Product ${editingId ? 'updated' : 'added'} successfully!`);
       // Reset form
       setEditingId(null);
       setUrl('');
@@ -158,7 +159,7 @@ export default function DashboardPage() {
       // Refresh inventory
       fetchProducts();
     } catch {
-      alert('Error saving product to database.');
+      toast.error('Error saving product to database.');
     } finally {
       setIsSaving(false);
     }
@@ -195,12 +196,12 @@ export default function DashboardPage() {
         body: JSON.stringify({ orderId, email, status: newStatus }),
       });
       if (res.ok) {
-        alert(`Notification successfully sent to ${email}! Status updated to ${newStatus}.`);
+        toast.success(`Notification successfully sent to ${email}! Status updated to ${newStatus}.`);
       } else {
-        alert('Failed to send notification.');
+        toast.error('Failed to send notification.');
       }
     } catch {
-      alert('Network error while notifying buyer.');
+      toast.error('Network error while notifying buyer.');
     } finally {
       setNotifyingId(null);
     }

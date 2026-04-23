@@ -1,5 +1,7 @@
 'use client';
 
+import toast from 'react-hot-toast';
+
 export default function ContactPage() {
   return (
     <main className="container mx-auto px-4 py-16 max-w-4xl">
@@ -21,7 +23,7 @@ export default function ContactPage() {
         </div>
 
         <div>
-          <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); alert('Message sent!'); }}>
+          <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); toast.success('Message sent!'); }}>
             <div>
               <label className="block text-sm font-bold uppercase mb-2">Name</label>
               <input type="text" required className="w-full border border-neutral-300 p-3 focus:outline-none focus:border-black" />
