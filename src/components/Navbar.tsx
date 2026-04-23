@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Search, Heart, ShoppingBag, Menu, User, LogOut, X, Package } from 'lucide-react';
+import { Search, Heart, ShoppingBag, Menu, User, LogOut, X, Package, LayoutDashboard } from 'lucide-react';
 import { useCartStore } from '@/store/useCartStore';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
@@ -20,18 +20,17 @@ export default function Navbar() {
   const router = useRouter();
   const supabase = createClient();
 
+  const isOwner = mounted && user?.email && OWNER_EMAILS.includes(user.email);
+
   useEffect(() => {
     setMounted(true);
-
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll, { passive: true });
 
-    // Check active Supabase session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
     });
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
     });
@@ -57,6 +56,28 @@ export default function Navbar() {
     }
   };
 
+  // ── Owner: minimal navbar ──
+  if (isOwner) {
+    return (
+      <header className="sticky top-0 z-50 w-full bg-neutral-950 text-white border-b border-neutral-800">
+        <div className="container mx-auto px-4 h-14 flex items-center justify-between">
+          <Link href="/dashboard" className="text-lg font-black tracking-widest uppercase">
+            SOLE VAULT <span className="text-[10px] font-bold tracking-wider text-neutral-500 ml-2">ADMIN</span>
+          </Link>
+          <div className="flex items-center gap-5">
+            <Link href="/dashboard" className="text-xs font-bold uppercase tracking-wider text-neutral-400 hover:text-white transition-colors flex items-center gap-1.5">
+              <LayoutDashboard size={14} /> Dashboard
+            </Link>
+            <button onClick={handleSignOut} className="text-xs font-bold uppercase tracking-wider text-neutral-500 hover:text-[#E63946] transition-colors flex items-center gap-1.5">
+              <LogOut size={14} /> Sign Out
+            </button>
+          </div>
+        </div>
+      </header>
+    );
+  }
+
+  // ── Buyer: full navbar ──
   return (
     <header className={`sticky top-0 z-50 w-full transition-all duration-300 ${
       scrolled
@@ -137,18 +158,13 @@ export default function Navbar() {
                 <Link href="/orders" className="hover:text-[#E63946] transition-colors" aria-label="My Orders">
                   <Package size={20} />
                 </Link>
-                {user.email && OWNER_EMAILS.includes(user.email) && (
-                  <Link href="/dashboard" className="hover:text-[#E63946] transition-colors">
-                    <User size={20} />
-                  </Link>
-                )}
                 <button onClick={handleSignOut} className="hover:text-[#E63946] transition-colors" aria-label="Sign Out">
                   <LogOut size={20} />
                 </button>
               </div>
             )}
           </div>
-          {/* Mobile-only login icon (visible as icon, no text) */}
+          {/* Mobile-only login icon */}
           <div className="sm:hidden">
             {mounted && !user && (
               <Link href="/login" aria-label="Log In" className="hover:text-[#E63946] transition-colors">
@@ -179,11 +195,6 @@ export default function Navbar() {
               {mounted && user && (
                 <Link href="/orders" onClick={() => setMobileMenuOpen(false)} className="py-3 px-2 text-sm uppercase tracking-[0.08em] font-medium text-neutral-600 hover:text-black hover:bg-neutral-50 transition-all flex items-center gap-2">
                   <Package size={16} /> My Orders
-                </Link>
-              )}
-              {mounted && user && user.email && OWNER_EMAILS.includes(user.email) && (
-                <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)} className="py-3 px-2 text-sm uppercase tracking-[0.08em] font-medium text-neutral-600 hover:text-black hover:bg-neutral-50 transition-all flex items-center gap-2">
-                  <User size={16} /> Dashboard
                 </Link>
               )}
             </div>
