@@ -20,6 +20,7 @@ model Product {
   description String
   price       Float
   imageUrl    String?
+  category    String   @default("Men")
   sizes       Json     @default("{}")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

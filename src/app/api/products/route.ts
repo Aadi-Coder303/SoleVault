@@ -1,10 +1,28 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url);
+    const category = searchParams.get('category');
+    const brand = searchParams.get('brand');
+    const sort = searchParams.get('sort'); // price_asc, price_desc, newest
+    
+    let orderBy: any = { createdAt: 'desc' };
+    if (sort === 'price_asc') orderBy = { price: 'asc' };
+    if (sort === 'price_desc') orderBy = { price: 'desc' };
+
+    const where: any = {};
+    if (category && category.toLowerCase() !== 'sale') {
+      where.category = { equals: category, mode: 'insensitive' };
+    }
+    if (brand) {
+      where.brand = { equals: brand, mode: 'insensitive' };
+    }
+
     const products = await prisma.product.findMany({
-      orderBy: { createdAt: 'desc' },
+      where,
+      orderBy,
     });
     return NextResponse.json(products);
   } catch (error: any) {
@@ -19,7 +37,7 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { name, brand, description, price, imageUrl, sizes } = body;
+    const { name, brand, description, price, imageUrl, sizes, category } = body;
 
     if (!name || !price) {
       return NextResponse.json({ error: 'Name and price are required' }, { status: 400 });
@@ -32,6 +50,7 @@ export async function POST(req: Request) {
         description: description || '',
         price: parseFloat(price.toString()),
         imageUrl: imageUrl || null,
+        category: category || 'Men',
         sizes: sizes || {},
       },
     });
@@ -46,7 +65,7 @@ export async function POST(req: Request) {
 export async function PUT(req: Request) {
   try {
     const body = await req.json();
-    const { id, name, brand, description, price, imageUrl, sizes } = body;
+    const { id, name, brand, description, price, imageUrl, sizes, category } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'Product ID is required for update' }, { status: 400 });
@@ -60,6 +79,7 @@ export async function PUT(req: Request) {
         description,
         price: parseFloat(price.toString()),
         imageUrl,
+        category,
         sizes,
       },
     });

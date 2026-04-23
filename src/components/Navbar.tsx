@@ -7,9 +7,10 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
+import { OWNER_EMAILS } from '@/lib/constants';
 
 export default function Navbar() {
-  const [user, setUser] = useState<SupabaseUser | { email: string, role: string } | null>(null);
+  const [user, setUser] = useState<SupabaseUser | null>(null);
   const getTotalItems = useCartStore(state => state.getTotalItems);
   const [mounted, setMounted] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
@@ -20,34 +21,20 @@ export default function Navbar() {
   useEffect(() => {
     setMounted(true);
     
-    // Check for dev session cookie
-    const isDevOwner = document.cookie.includes('dev_session=owner');
-    const isDevBuyer = document.cookie.includes('dev_session=buyer');
-    
-    if (isDevOwner) {
-      setUser({ email: 'owner@dev.com', role: 'owner' });
-    } else if (isDevBuyer) {
-      setUser({ email: 'buyer@dev.com', role: 'buyer' });
-    } else {
-      // Check active Supabase session
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        setUser(session?.user ?? null);
-      });
-    }
+    // Check active Supabase session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!isDevOwner && !isDevBuyer) {
-        setUser(session?.user ?? null);
-      }
+      setUser(session?.user ?? null);
     });
 
     return () => subscription.unsubscribe();
   }, [supabase.auth]);
 
   const handleSignOut = async () => {
-    // Clear dev cookie
-    document.cookie = "dev_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     await supabase.auth.signOut();
     setUser(null);
     router.push('/');
@@ -129,9 +116,11 @@ export default function Navbar() {
             )}
             {mounted && user && (
               <div className="flex items-center gap-4">
-                <Link href="/dashboard" className="hover:text-[#E63946] transition-colors">
-                  <User size={20} />
-                </Link>
+                {user.email && OWNER_EMAILS.includes(user.email) && (
+                  <Link href="/dashboard" className="hover:text-[#E63946] transition-colors">
+                    <User size={20} />
+                  </Link>
+                )}
                 <button onClick={handleSignOut} className="hover:text-[#E63946] transition-colors" aria-label="Sign Out">
                   <LogOut size={20} />
                 </button>

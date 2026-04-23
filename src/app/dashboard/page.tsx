@@ -3,8 +3,19 @@
 import { useState, useEffect } from 'react';
 import { Loader2, Plus, Minus, Edit2 } from 'lucide-react';
 import { twMerge } from 'tailwind-merge';
+import { createClient } from '@/utils/supabase/client';
+import { useRouter } from 'next/navigation';
+import { OWNER_EMAILS } from '@/lib/constants';
 
-const STANDARD_SIZES = ['UK 6', 'UK 6.5', 'UK 7', 'UK 7.5', 'UK 8', 'UK 8.5', 'UK 9', 'UK 9.5', 'UK 10', 'UK 10.5', 'UK 11', 'UK 12'];
+const MEN_SIZES = ['UK 6', 'UK 6.5', 'UK 7', 'UK 7.5', 'UK 8', 'UK 8.5', 'UK 9', 'UK 9.5', 'UK 10', 'UK 10.5', 'UK 11', 'UK 12'];
+const WOMEN_SIZES = ['UK 3', 'UK 3.5', 'UK 4', 'UK 4.5', 'UK 5', 'UK 5.5', 'UK 6', 'UK 6.5', 'UK 7', 'UK 7.5', 'UK 8'];
+const KIDS_SIZES = ['UK 1', 'UK 1.5', 'UK 2', 'UK 2.5', 'UK 3', 'UK 3.5', 'UK 4', 'UK 4.5', 'UK 5', 'UK 5.5'];
+
+const getActiveSizes = (category: string) => {
+  if (category.toLowerCase() === 'women') return WOMEN_SIZES;
+  if (category.toLowerCase() === 'kids') return KIDS_SIZES;
+  return MEN_SIZES;
+};
 
 interface ProductData {
   id: string;
@@ -13,17 +24,16 @@ interface ProductData {
   price: number;
   description: string;
   imageUrl: string | null;
+  category: string;
   sizes: Record<string, number>;
 }
 
-// Mock Order Data
-const MOCK_ORDERS = [
-  { id: 'ORD-1021', item: 'Nike Dunk Low Panda', size: 'UK 9', buyer: 'rohit@example.com', status: 'Pending', date: '2026-04-23' },
-  { id: 'ORD-1020', item: 'Air Jordan 1 Chicago', size: 'UK 8', buyer: 'neha@example.com', status: 'In Process', date: '2026-04-22' },
-  { id: 'ORD-1019', item: 'Yeezy Boost 350 V2', size: 'UK 10', buyer: 'vikram@example.com', status: 'Sold', date: '2026-04-20' },
-];
+// Mock Order Data (Reset to zero)
+const MOCK_ORDERS: any[] = [];
 
 export default function DashboardPage() {
+  const router = useRouter();
+  const supabase = createClient();
   const [activeTab, setActiveTab] = useState<'inventory' | 'pending' | 'in_process' | 'sold'>('inventory');
   
   // Real Inventory Data
@@ -42,11 +52,10 @@ export default function DashboardPage() {
     price: '',
     description: '',
     imageUrl: '',
+    category: 'Men',
   });
 
-  const [sizes, setSizes] = useState<Record<string, number>>(
-    STANDARD_SIZES.reduce((acc, size) => ({ ...acc, [size]: 0 }), {})
-  );
+  const [sizes, setSizes] = useState<Record<string, number>>({});
 
   const [notifyingId, setNotifyingId] = useState<string | null>(null);
 
@@ -66,8 +75,17 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
+    // Check owner authorization
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.email || !OWNER_EMAILS.includes(session.user.email)) {
+        router.push('/');
+      }
+    };
+    checkAuth();
+
     fetchProducts();
-  }, []);
+  }, [supabase.auth, router]);
 
   const handleScrape = async () => {
     if (!url) return alert('Please enter a URL first.');
@@ -118,6 +136,7 @@ export default function DashboardPage() {
         price: Number(formData.price),
         description: formData.description,
         imageUrl: formData.imageUrl,
+        category: formData.category,
         sizes,
       };
 
@@ -133,8 +152,8 @@ export default function DashboardPage() {
       // Reset form
       setEditingId(null);
       setUrl('');
-      setFormData({ name: '', brand: '', price: '', description: '', imageUrl: '' });
-      setSizes(STANDARD_SIZES.reduce((acc, size) => ({ ...acc, [size]: 0 }), {}));
+      setFormData({ name: '', brand: '', price: '', description: '', imageUrl: '', category: 'Men' });
+      setSizes({});
       
       // Refresh inventory
       fetchProducts();
@@ -153,10 +172,9 @@ export default function DashboardPage() {
       price: product.price.toString(),
       description: product.description,
       imageUrl: product.imageUrl || '',
+      category: product.category || 'Men',
     });
-    // Merge existing sizes into standard sizes template
-    const defaultSizes = STANDARD_SIZES.reduce((acc, size) => ({ ...acc, [size]: 0 }), {});
-    setSizes({ ...defaultSizes, ...(product.sizes || {}) });
+    setSizes(product.sizes || {});
     
     // Scroll to top
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -164,8 +182,8 @@ export default function DashboardPage() {
 
   const handleCancelEdit = () => {
     setEditingId(null);
-    setFormData({ name: '', brand: '', price: '', description: '', imageUrl: '' });
-    setSizes(STANDARD_SIZES.reduce((acc, size) => ({ ...acc, [size]: 0 }), {}));
+    setFormData({ name: '', brand: '', price: '', description: '', imageUrl: '', category: 'Men' });
+    setSizes({});
   };
 
   const handleNotifyBuyer = async (orderId: string, email: string, newStatus: string) => {
@@ -335,11 +353,24 @@ export default function DashboardPage() {
                   )}
                 </div>
 
+                <div>
+                  <label className="block text-sm font-semibold mb-1 mt-4">Category</label>
+                  <select 
+                    value={formData.category}
+                    onChange={(e) => setFormData({...formData, category: e.target.value})}
+                    className="w-full border border-neutral-300 p-3 text-sm focus:outline-none focus:border-black bg-white"
+                  >
+                    <option value="Men">Men</option>
+                    <option value="Women">Women</option>
+                    <option value="Kids">Kids</option>
+                  </select>
+                </div>
+
                 {/* SIZES MATRIX */}
                 <div className="mt-4">
-                  <label className="block text-sm font-semibold mb-2">Inventory by Size</label>
+                  <label className="block text-sm font-semibold mb-2">Inventory by Size ({formData.category})</label>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                    {STANDARD_SIZES.map(size => (
+                    {getActiveSizes(formData.category).map(size => (
                       <div key={size} className={twMerge("flex flex-col items-center p-2 border", sizes[size] > 0 ? "border-[#E63946] bg-red-50" : "border-neutral-200 bg-white")}>
                         <span className="text-xs font-bold mb-2">{size}</span>
                         <div className="flex items-center gap-2">

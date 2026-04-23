@@ -182,32 +182,7 @@ export default function LoginPage() {
           </form>
         )}
 
-        {/* Developer Fake Login */}
-        <div className="mt-12 pt-6 border-t border-neutral-200">
-          <p className="text-xs text-neutral-500 text-center uppercase tracking-widest mb-4 font-bold">Developer Access</p>
-          <div className="flex gap-2">
-            <button 
-              onClick={() => {
-                document.cookie = "dev_session=owner; path=/";
-                router.push('/dashboard');
-                router.refresh();
-              }}
-              className="flex-1 bg-neutral-200 text-neutral-600 text-xs font-bold uppercase py-2 hover:bg-neutral-300 transition-colors"
-            >
-              Owner Login
-            </button>
-            <button 
-              onClick={() => {
-                document.cookie = "dev_session=buyer; path=/";
-                router.push('/');
-                router.refresh();
-              }}
-              className="flex-1 bg-neutral-200 text-neutral-600 text-xs font-bold uppercase py-2 hover:bg-neutral-300 transition-colors"
-            >
-              Buyer Login
-            </button>
-          </div>
-        </div>
+
       </div>
     </main>
   );

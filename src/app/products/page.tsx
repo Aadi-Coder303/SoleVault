@@ -1,30 +1,56 @@
 import FilterSidebar from '@/components/FilterSidebar';
 import ProductCard from '@/components/ProductCard';
+import ProductSort from '@/components/ProductSort';
 import prisma from '@/lib/prisma';
+import { Suspense } from 'react';
 
 export const revalidate = 0; // Disable caching for MVP
 
-export default async function ProductsPage() {
+export default async function ProductsPage({ 
+  searchParams 
+}: { 
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }> 
+}) {
+  const params = await searchParams;
+  const category = typeof params.category === 'string' ? params.category : undefined;
+  const brand = typeof params.brand === 'string' ? params.brand : undefined;
+  const sort = typeof params.sort === 'string' ? params.sort : undefined;
+
+  let orderBy: any = { createdAt: 'desc' };
+  if (sort === 'price_asc') orderBy = { price: 'asc' };
+  if (sort === 'price_desc') orderBy = { price: 'desc' };
+
+  const where: any = {};
+  if (category && category.toLowerCase() !== 'sale') {
+    where.category = { equals: category, mode: 'insensitive' };
+  }
+  if (brand) {
+    where.brand = { equals: brand, mode: 'insensitive' };
+  }
+
   const products = await prisma.product.findMany({
-    orderBy: { createdAt: 'desc' },
+    where,
+    orderBy,
   });
 
   return (
     <main className="container mx-auto px-4 py-8 flex flex-col lg:flex-row gap-8">
       {/* Sidebar Filters */}
       <div className="hidden lg:block w-64 shrink-0">
-        <FilterSidebar />
+        <Suspense fallback={<div>Loading filters...</div>}>
+          <FilterSidebar />
+        </Suspense>
       </div>
 
       {/* Product Grid */}
       <div className="flex-1">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold uppercase tracking-wide">All Sneakers</h1>
-          <select className="border-none text-sm font-medium bg-transparent focus:ring-0 cursor-pointer outline-none">
-            <option>Newest Listed</option>
-            <option>Price: Low to High</option>
-            <option>Price: High to Low</option>
-          </select>
+          <h1 className="text-2xl font-bold uppercase tracking-wide">
+            {category ? `${category} Sneakers` : 'All Sneakers'}
+          </h1>
+          <Suspense fallback={<div>Loading...</div>}>
+            <ProductSort />
+          </Suspense>
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -40,7 +66,7 @@ export default async function ProductsPage() {
           ))}
           {products.length === 0 && (
             <div className="col-span-full py-12 text-center text-neutral-500">
-              No products found. Add some in the owner dashboard!
+              No products found matching your filters.
             </div>
           )}
         </div>

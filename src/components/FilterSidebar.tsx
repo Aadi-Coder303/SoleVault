@@ -1,4 +1,27 @@
+'use client';
+
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useCallback } from 'react';
+import { twMerge } from 'tailwind-merge';
+
+const BRANDS = ['Nike', 'Adidas', 'Jordan', 'New Balance', 'ASICS', 'Salomon'];
+
 export default function FilterSidebar() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  const currentBrand = searchParams.get('brand');
+
+  const toggleBrand = useCallback((brand: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (currentBrand === brand) {
+      params.delete('brand');
+    } else {
+      params.set('brand', brand);
+    }
+    router.push(`?${params.toString()}`);
+  }, [searchParams, currentBrand, router]);
+
   return (
     <aside className="w-full">
       <h2 className="text-lg font-bold mb-6 uppercase tracking-wide">Filters</h2>
@@ -8,52 +31,33 @@ export default function FilterSidebar() {
         <div className="border-b border-neutral-200 pb-6">
           <h3 className="font-bold mb-4 uppercase tracking-wider text-sm">Brand</h3>
           <div className="space-y-3 text-sm text-neutral-600">
-            {['Nike', 'Adidas', 'Jordan', 'New Balance', 'ASICS', 'Salomon'].map(brand => (
+            {BRANDS.map(brand => (
               <label key={brand} className="flex items-center gap-3 cursor-pointer hover:text-black">
-                <input type="checkbox" className="w-4 h-4 accent-black" /> 
+                <input 
+                  type="checkbox" 
+                  checked={currentBrand === brand}
+                  onChange={() => toggleBrand(brand)}
+                  className="w-4 h-4 accent-black" 
+                /> 
                 {brand}
               </label>
             ))}
           </div>
         </div>
 
-        {/* Size Filter */}
-        <div className="border-b border-neutral-200 pb-6">
-          <h3 className="font-bold mb-4 uppercase tracking-wider text-sm">Size (UK)</h3>
-          <div className="grid grid-cols-3 gap-2">
-            {[6, 7, 8, 9, 10, 11, 12].map(size => (
-              <button key={size} className="border border-neutral-200 py-2 text-sm hover:border-black hover:bg-neutral-50 transition-colors">
-                {size}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Price Range Filter */}
-        <div className="border-b border-neutral-200 pb-6">
-          <h3 className="font-bold mb-4 uppercase tracking-wider text-sm">Price Range</h3>
-          <div className="space-y-3 text-sm text-neutral-600">
-            {['Under ₹10,000', '₹10,000 - ₹20,000', '₹20,000 - ₹30,000', 'Over ₹30,000'].map(range => (
-              <label key={range} className="flex items-center gap-3 cursor-pointer hover:text-black">
-                <input type="radio" name="price" className="w-4 h-4 accent-black" /> 
-                {range}
-              </label>
-            ))}
-          </div>
-        </div>
-
-        {/* Condition Filter */}
-        <div className="pb-6">
-          <h3 className="font-bold mb-4 uppercase tracking-wider text-sm">Condition</h3>
-          <div className="space-y-3 text-sm text-neutral-600">
-            <label className="flex items-center gap-3 cursor-pointer hover:text-black">
-              <input type="checkbox" className="w-4 h-4 accent-black" /> Brand New
-            </label>
-            <label className="flex items-center gap-3 cursor-pointer hover:text-black">
-              <input type="checkbox" className="w-4 h-4 accent-black" /> Pre-Owned
-            </label>
-          </div>
-        </div>
+        {/* Clear Filters */}
+        {currentBrand && (
+          <button 
+            onClick={() => {
+              const params = new URLSearchParams(searchParams.toString());
+              params.delete('brand');
+              router.push(`?${params.toString()}`);
+            }}
+            className="text-xs font-bold uppercase underline hover:text-[#E63946] transition-colors"
+          >
+            Clear Filters
+          </button>
+        )}
       </div>
     </aside>
   );
