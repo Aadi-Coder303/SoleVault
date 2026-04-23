@@ -15,12 +15,16 @@ export default function Navbar() {
   const [mounted, setMounted] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [scrolled, setScrolled] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
   useEffect(() => {
     setMounted(true);
-    
+
+    const handleScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
     // Check active Supabase session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
@@ -31,7 +35,10 @@ export default function Navbar() {
       setUser(session?.user ?? null);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      subscription.unsubscribe();
+    };
   }, [supabase.auth]);
 
   const handleSignOut = async () => {
@@ -49,7 +56,11 @@ export default function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-white border-b border-neutral-200">
+    <header className={`sticky top-0 z-50 w-full transition-all duration-300 ${
+      scrolled
+        ? 'bg-white/90 backdrop-blur-md border-b border-neutral-200/80 shadow-sm'
+        : 'bg-white border-b border-neutral-200'
+    }`}>
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         
         {/* Mobile Menu & Logo */}
