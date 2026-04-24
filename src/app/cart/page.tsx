@@ -8,9 +8,18 @@ import { useEffect, useState } from 'react';
 export default function CartPage() {
   const { items, updateQuantity, removeItem, getTotalPrice } = useCartStore();
   const [mounted, setMounted] = useState(false);
+  const [emptyText, setEmptyText] = useState("");
 
   useEffect(() => {
     setMounted(true);
+    const quotes = [
+      "Your bag is empty. Your feet are crying.",
+      "Wow, such empty. Go buy some sneakers.",
+      "0 items? We know you have better taste than that.",
+      "Your cart is as empty as my ex's heart.",
+      "Nothing here. Are you even trying to look fly?"
+    ];
+    setEmptyText(quotes[Math.floor(Math.random() * quotes.length)]);
   }, []);
 
   if (!mounted) return null; // Avoid hydration mismatch
@@ -21,7 +30,7 @@ export default function CartPage() {
       
       {items.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-neutral-500 mb-6 font-medium">Your bag is so empty we can hear an echo. Your feet deserve better than this—go secure some heat.</p>
+          <p className="text-neutral-500 mb-6 font-medium">{emptyText}</p>
           <Link href="/products" className="inline-block bg-black text-white px-8 py-3 font-bold uppercase tracking-wider hover:bg-[#E63946] transition-colors">
             Continue Shopping
           </Link>

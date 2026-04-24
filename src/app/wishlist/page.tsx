@@ -21,9 +21,18 @@ export default function WishlistPage() {
   const [mounted, setMounted] = useState(false);
   const [products, setProducts] = useState<ProductData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [emptyText, setEmptyText] = useState("");
 
   useEffect(() => {
     setMounted(true);
+    const quotes = [
+      "Zero favorites? Your taste can't be that bad.",
+      "Wow, nothing? Stop playing around.",
+      "Your wishlist is looking a little sad.",
+      "No favorites yet. We're judging you slightly.",
+      "Empty wishlist? Let's fix that."
+    ];
+    setEmptyText(quotes[Math.floor(Math.random() * quotes.length)]);
   }, []);
 
   useEffect(() => {
@@ -72,7 +81,7 @@ export default function WishlistPage() {
           <Heart size={48} className="text-neutral-300 mb-4" />
           <h2 className="text-xl font-bold uppercase tracking-wide mb-2">Wow, zero favorites?</h2>
           <p className="text-neutral-500 mb-8 max-w-md">
-            Seriously? Not a single pair caught your eye? We know your taste is better than this. Stop playing around and go favorite some heat.
+            {emptyText}
           </p>
           <Link href="/products?category=all" className="bg-black text-white px-8 py-4 font-bold uppercase tracking-wider hover:bg-[#E63946] transition-colors">
             Shop All Sneakers
