@@ -28,7 +28,7 @@ export default function FilterSidebar() {
       
       <div className="space-y-8">
         {/* Brand Filter */}
-        <div className="border-b border-neutral-200 pb-6">
+        <div className="border-b border-neutral-200 dark:border-neutral-800 pb-6">
           <h3 className="font-bold mb-4 uppercase tracking-wider text-sm">Brand</h3>
           <div className="space-y-3 text-sm text-neutral-600">
             {BRANDS.map(brand => (

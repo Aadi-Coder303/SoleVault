@@ -26,7 +26,7 @@ export default function ImageGallery({ images, altText }: ImageGalleryProps) {
   return (
     <div className="flex flex-col gap-4 w-full">
       {/* Main Image */}
-      <div className="relative aspect-[4/3] bg-neutral-100 w-full overflow-hidden flex items-center justify-center group">
+      <div className="relative aspect-[4/3] bg-neutral-100 dark:bg-neutral-800 w-full overflow-hidden flex items-center justify-center group">
         {displayImages[activeIndex] ? (
           <img 
             src={displayImages[activeIndex]} 
@@ -57,7 +57,7 @@ export default function ImageGallery({ images, altText }: ImageGalleryProps) {
               key={idx}
               onClick={() => switchImage(idx)}
               className={twMerge(
-                "relative w-20 h-20 md:w-24 md:h-24 shrink-0 bg-neutral-100 border-2 transition-all duration-200 overflow-hidden flex items-center justify-center hover:opacity-100",
+                "relative w-20 h-20 md:w-24 md:h-24 shrink-0 bg-neutral-100 dark:bg-neutral-800 border-2 transition-all duration-200 overflow-hidden flex items-center justify-center hover:opacity-100",
                 activeIndex === idx 
                   ? "border-black opacity-100" 
                   : "border-transparent opacity-60 hover:border-neutral-300"

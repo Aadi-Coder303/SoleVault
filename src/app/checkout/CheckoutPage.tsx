@@ -1,6 +1,15 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Loader2, ShieldCheck, Truck, CreditCard, MapPin, AlertTriangle, Tag, X } from 'lucide-react';
+import { Loader2, ShieldCheck, Truck, CreditCard, MapPin, AlertTriangle, Tag, X, ChevronDown } from 'lucide-react';
+
+const COUNTRY_CODES = [
+  { code: '+91', label: '🇮🇳 +91' },
+  { code: '+1', label: '🇺🇸 +1' },
+  { code: '+44', label: '🇬🇧 +44' },
+  { code: '+971', label: '🇦🇪 +971' },
+  { code: '+65', label: '🇸🇬 +65' },
+  { code: '+61', label: '🇦🇺 +61' },
+];
 import { useCartStore } from '@/store/useCartStore';
 import { formatCurrency } from '@/lib/formatCurrency';
 import Link from 'next/link';
@@ -22,6 +31,7 @@ interface SavedAddress {
 export default function CheckoutPage() {
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
+  const [countryCode, setCountryCode] = useState('+91');
   const [email, setEmail] = useState('');
   const [address1, setAddress1] = useState('');
   const [address2, setAddress2] = useState('');
@@ -100,6 +110,29 @@ export default function CheckoutPage() {
     }
   }, []);
 
+  // Reusable GoKwik address lookup
+  const fetchGoKwikAddresses = useCallback(async (phoneDigits: string, emailAddr: string) => {
+    if (phoneDigits.length !== 10) return;
+    setIsFetchingAddresses(true);
+    try {
+      const res = await fetch('/api/gokwik/address', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: phoneDigits, email: emailAddr }),
+      });
+      const data = await res.json();
+      if (data.addresses && data.addresses.length > 0) {
+        setSavedAddresses(data.addresses);
+        toast.success('Found saved address(es)!', { icon: '📍' });
+      }
+      setAddressFetched(true);
+    } catch {
+      // Fail silently
+    } finally {
+      setIsFetchingAddresses(false);
+    }
+  }, []);
+
   useEffect(() => {
     setMounted(true);
     if (searchParams.get('payment_failed') === 'true') {
@@ -120,17 +153,27 @@ export default function CheckoutPage() {
       const meta = session.user.user_metadata;
       if (meta?.full_name && !fullName) setFullName(meta.full_name);
       else if (meta?.name && !fullName) setFullName(meta.name);
-      if (session.user.email && !email) setEmail(session.user.email);
+      const sessionEmail = session.user.email || '';
+      if (sessionEmail && !email) setEmail(sessionEmail);
       
       // Auto-fill phone: check multiple sources
       const rawPhone = session.user.phone 
         || meta?.phone 
         || meta?.phone_number 
         || '';
+      let prefilledPhone = '';
       if (rawPhone) {
         const digits = rawPhone.replace(/\D/g, ''); // strip all non-digits
         const tenDigits = digits.length > 10 ? digits.slice(-10) : digits; // take last 10
-        if (tenDigits.length === 10) setPhone(tenDigits);
+        if (tenDigits.length === 10) {
+          setPhone(tenDigits);
+          prefilledPhone = tenDigits;
+        }
+      }
+
+      // Auto-trigger GoKwik address lookup when phone is pre-filled from session
+      if (prefilledPhone.length === 10) {
+        fetchGoKwikAddresses(prefilledPhone, sessionEmail || email);
       }
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -201,24 +244,7 @@ export default function CheckoutPage() {
     setPhoneError(validatePhone(val));
 
     if (val.length === 10 && !addressFetched) {
-      setIsFetchingAddresses(true);
-      try {
-        const res = await fetch('/api/gokwik/address', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone: val, email }),
-        });
-        const data = await res.json();
-        if (data.addresses && data.addresses.length > 0) {
-          setSavedAddresses(data.addresses);
-          toast.success('Found saved address(es)!', { icon: '📍' });
-        }
-        setAddressFetched(true);
-      } catch {
-        // Fail silently
-      } finally {
-        setIsFetchingAddresses(false);
-      }
+      fetchGoKwikAddresses(val, email);
     }
   };
 
@@ -279,7 +305,7 @@ export default function CheckoutPage() {
       toast.error('Please remove out-of-stock items before placing your order.'); return;
     }
 
-    const fullPhone = `+91${phone.replace(/\D/g, '')}`;
+    const fullPhone = `${countryCode}${phone.replace(/\D/g, '')}`;
     const fullAddress = `${address1}${address2 ? ', ' + address2 : ''}, ${city}, ${stateName} - ${pincode}`;
 
     // All orders are prepaid — online payment only
@@ -387,7 +413,18 @@ export default function CheckoutPage() {
                   <div>
                     <label className="block text-sm font-semibold mb-2">Phone *</label>
                     <div className="flex">
-                      <span className="inline-flex items-center px-3 bg-neutral-100 border border-r-0 border-neutral-300 text-sm font-semibold text-neutral-600 select-none">+91</span>
+                      <div className="relative">
+                        <select
+                          value={countryCode}
+                          onChange={(e) => setCountryCode(e.target.value)}
+                          className="appearance-none h-full bg-neutral-100 border border-r-0 border-neutral-300 pl-3 pr-7 text-sm font-semibold text-neutral-700 focus:outline-none focus:border-black cursor-pointer"
+                        >
+                          {COUNTRY_CODES.map(c => (
+                            <option key={c.code} value={c.code}>{c.label}</option>
+                          ))}
+                        </select>
+                        <ChevronDown size={14} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
+                      </div>
                       <input required type="tel" maxLength={10} value={phone} onChange={handlePhoneChange} className={`w-full border p-3 focus:outline-none ${phoneError ? 'border-red-400 focus:border-red-500' : 'border-neutral-300 focus:border-black'}`} placeholder="9876543210" />
                     </div>
                     </div>
@@ -428,7 +465,7 @@ export default function CheckoutPage() {
                         if (validItems.length === 0) { toast.error('Your bag is empty.'); return; }
                         setIsRequestingCod(true);
                         try {
-                          const fullPhone = `+91${phone.replace(/\D/g, '')}`;
+                          const fullPhone = `${countryCode}${phone.replace(/\D/g, '')}`;
                           const fullAddress = `${address1}${address2 ? ', ' + address2 : ''}, ${city}, ${stateName} - ${pincode}`;
                           await fetch('/api/orders/cod', {
                             method: 'POST',
@@ -477,11 +514,16 @@ export default function CheckoutPage() {
                 <div className="flex flex-col gap-4 mb-6 border-b border-neutral-200 pb-6 max-h-[40vh] overflow-y-auto pr-1">
                   {items.map(item => {
                     const isOOS = outOfStockItems.includes(item.id);
-                    const imgSrc = item.imageUrl ? item.imageUrl.split(',')[0].trim() : '';
+                    const rawImg = item.imageUrl || '';
+                    const imgSrc = rawImg.includes(',') ? rawImg.split(',')[0].trim() : rawImg.trim();
                     return (
                       <div key={item.id} className={`flex gap-4 ${isOOS ? 'opacity-50' : ''}`}>
                         <div className="w-16 h-16 bg-neutral-200 flex-shrink-0 relative overflow-hidden">
-                          {imgSrc && <img src={imgSrc} alt={item.name} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />}
+                          {imgSrc ? (
+                            <img src={imgSrc} alt={item.name} className="w-full h-full object-cover" loading="lazy" referrerPolicy="no-referrer" crossOrigin="anonymous" onError={(e) => { const el = e.target as HTMLImageElement; el.style.display = 'none'; el.parentElement!.innerHTML = '<div class="w-full h-full flex items-center justify-center text-neutral-400 text-[10px] font-bold">IMG</div>'; }} />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-neutral-400 text-[10px] font-bold">IMG</div>
+                          )}
                         </div>
                         <div className="flex-1">
                           <h3 className="font-bold text-sm leading-tight">{item.name}</h3>

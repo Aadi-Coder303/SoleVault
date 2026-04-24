@@ -45,9 +45,9 @@ export default function SizeSelector({ sizes, onSelect }: SizeSelectorProps) {
             className={twMerge(
               "relative py-2 text-sm font-medium border transition-colors min-h-[48px] flex flex-col items-center justify-center gap-0.5",
               size.available 
-                ? "border-neutral-200 hover:border-black cursor-pointer bg-white text-black" 
-                : "border-neutral-100 bg-neutral-50 text-neutral-400 cursor-not-allowed line-through",
-              selectedSize === size.id && "bg-black text-white border-black hover:border-black"
+                ? "border-neutral-200 dark:border-neutral-700 hover:border-black dark:hover:border-white cursor-pointer bg-white dark:bg-neutral-900 text-black dark:text-white" 
+                : "border-neutral-100 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50 text-neutral-400 cursor-not-allowed line-through",
+              selectedSize === size.id && "bg-black dark:bg-white text-white dark:text-black border-black dark:border-white hover:border-black dark:hover:border-white"
             )}
           >
             <span>UK {size.label}</span>
@@ -68,7 +68,7 @@ export default function SizeSelector({ sizes, onSelect }: SizeSelectorProps) {
       {/* Size Guide Link */}
       <button 
         onClick={() => setShowSizeGuide(true)}
-        className="mt-4 text-sm font-semibold underline text-neutral-600 hover:text-black transition-colors"
+        className="mt-4 text-sm font-semibold underline text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white transition-colors"
       >
         Find My Size
       </button>
@@ -76,7 +76,7 @@ export default function SizeSelector({ sizes, onSelect }: SizeSelectorProps) {
       {/* Size Guide Modal */}
       {showSizeGuide && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white w-full max-w-lg p-6 relative shadow-xl">
+          <div className="bg-white dark:bg-neutral-900 w-full max-w-lg p-6 relative shadow-xl">
             <button 
               onClick={() => setShowSizeGuide(false)}
               className="absolute top-4 right-4 hover:text-[#E63946] transition-colors"
@@ -87,7 +87,7 @@ export default function SizeSelector({ sizes, onSelect }: SizeSelectorProps) {
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left border-collapse">
                 <thead>
-                  <tr className="bg-neutral-100 text-neutral-600">
+                  <tr className="bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300">
                     <th className="p-3 border">UK</th>
                     <th className="p-3 border">US (Men)</th>
                     <th className="p-3 border">EU</th>

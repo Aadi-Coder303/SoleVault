@@ -13,7 +13,7 @@ export default async function Home() {
   });
 
   return (
-    <main className="flex min-h-screen flex-col bg-white">
+    <main className="flex min-h-screen flex-col bg-white dark:bg-neutral-950">
       <HeroSection />
       <BrandTicker />
 
@@ -22,11 +22,11 @@ export default async function Home() {
         <div className="flex justify-between items-end mb-10">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#E63946] mb-2">Just Dropped</p>
-            <h2 className="text-4xl font-black uppercase tracking-tight text-black">New Arrivals</h2>
+            <h2 className="text-4xl font-black uppercase tracking-tight text-black dark:text-white">New Arrivals</h2>
           </div>
           <Link
             href="/products"
-            className="group text-sm font-bold uppercase tracking-wider text-neutral-500 hover:text-black transition-colors flex items-center gap-1"
+            className="group text-sm font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 hover:text-black dark:hover:text-white transition-colors flex items-center gap-1"
           >
             View All
             <span className="group-hover:translate-x-1 transition-transform inline-block">→</span>
@@ -89,7 +89,7 @@ export default async function Home() {
       </section>
 
       {/* Trust Badges */}
-      <section className="py-16 border-t border-neutral-100">
+      <section className="py-16 border-t border-neutral-100 dark:border-neutral-800">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-8">
             {[
@@ -98,7 +98,7 @@ export default async function Home() {
               { icon: '↩', title: 'Easy Returns', desc: '7-day claim window' },
               { icon: '🔒', title: 'Secure Payments', desc: 'Powered by PayU' },
             ].map((b, i) => (
-              <div key={b.title} className="group flex flex-col items-center gap-2 p-5 hover:bg-neutral-50 border border-transparent hover:border-neutral-200 transition-all duration-300 rounded-sm">
+              <div key={b.title} className="group flex flex-col items-center gap-2 p-5 hover:bg-neutral-50 dark:hover:bg-neutral-900 border border-transparent hover:border-neutral-200 dark:hover:border-neutral-800 transition-all duration-300 rounded-sm">
                 <span className="text-2xl group-hover:scale-110 transition-transform duration-300">{b.icon}</span>
                 <p className="font-bold text-xs sm:text-sm uppercase tracking-wide text-center">{b.title}</p>
                 <p className="text-[10px] sm:text-xs text-neutral-500 text-center">{b.desc}</p>

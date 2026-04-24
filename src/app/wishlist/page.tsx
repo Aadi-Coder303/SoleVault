@@ -47,7 +47,7 @@ export default function WishlistPage() {
 
   return (
     <main className="container mx-auto px-4 py-12 min-h-[70vh]">
-      <div className="flex items-center gap-3 mb-8 border-b border-neutral-200 pb-4">
+      <div className="flex items-center gap-3 mb-8 border-b border-neutral-200 dark:border-neutral-800 pb-4">
         <Heart size={28} className="text-[#E63946] fill-current" />
         <h1 className="text-3xl font-bold uppercase tracking-wide">Your Favorites</h1>
       </div>
@@ -68,7 +68,7 @@ export default function WishlistPage() {
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center py-24 text-center bg-neutral-50 border border-neutral-200">
+        <div className="flex flex-col items-center justify-center py-24 text-center bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
           <Heart size={48} className="text-neutral-300 mb-4" />
           <h2 className="text-xl font-bold uppercase tracking-wide mb-2">Nothing to see here</h2>
           <p className="text-neutral-500 mb-8 max-w-md">

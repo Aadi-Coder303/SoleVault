@@ -31,8 +31,8 @@ export default function CartPage() {
           {/* Cart Items */}
           <div className="md:w-2/3 flex flex-col gap-6">
             {items.map(item => (
-              <div key={item.id} className="flex gap-4 border-b border-neutral-200 pb-6">
-                <div className="w-24 h-24 bg-neutral-100 flex-shrink-0 overflow-hidden">
+              <div key={item.id} className="flex gap-4 border-b border-neutral-200 dark:border-neutral-800 pb-6">
+                <div className="w-24 h-24 bg-neutral-100 dark:bg-neutral-800 flex-shrink-0 overflow-hidden">
                   {item.imageUrl && <img src={item.imageUrl.split(',')[0].trim()} alt={item.name} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />}
                 </div>
                 <div className="flex-1 flex flex-col justify-between">
@@ -43,14 +43,14 @@ export default function CartPage() {
                   <div className="flex justify-between items-center mt-2">
                     <span className="font-bold">{formatCurrency(item.price)}</span>
                     <div className="flex items-center gap-4">
-                      <div className="flex border border-neutral-200">
+                      <div className="flex border border-neutral-200 dark:border-neutral-700">
                         <button 
-                          className="px-3 py-1 hover:bg-neutral-50"
+                          className="px-3 py-1 hover:bg-neutral-50 dark:hover:bg-neutral-800"
                           onClick={() => updateQuantity(item.id, item.quantity - 1)}
                         >-</button>
-                        <span className="px-3 py-1 border-x border-neutral-200">{item.quantity}</span>
+                        <span className="px-3 py-1 border-x border-neutral-200 dark:border-neutral-700">{item.quantity}</span>
                         <button 
-                          className="px-3 py-1 hover:bg-neutral-50"
+                          className="px-3 py-1 hover:bg-neutral-50 dark:hover:bg-neutral-800"
                           onClick={() => updateQuantity(item.id, item.quantity + 1)}
                         >+</button>
                       </div>
@@ -69,7 +69,7 @@ export default function CartPage() {
 
           {/* Order Summary */}
           <div className="md:w-1/3">
-            <div className="bg-neutral-50 p-6">
+            <div className="bg-neutral-50 dark:bg-neutral-900 p-6">
               <h2 className="text-lg font-bold uppercase tracking-wide mb-6">Summary</h2>
               <div className="space-y-4 mb-6">
                 <div className="flex justify-between">
@@ -81,7 +81,7 @@ export default function CartPage() {
                   <span className="font-semibold">Calculated at checkout</span>
                 </div>
               </div>
-              <div className="border-t border-neutral-200 pt-4 mb-6 flex justify-between items-center">
+              <div className="border-t border-neutral-200 dark:border-neutral-700 pt-4 mb-6 flex justify-between items-center">
                 <span className="font-bold uppercase tracking-wide">Total</span>
                 <span className="text-xl font-bold">{formatCurrency(getTotalPrice())}</span>
               </div>

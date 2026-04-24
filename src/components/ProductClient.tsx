@@ -167,19 +167,19 @@ export default function ProductClient({ product, colorVariants = [] }: { product
         <div className="flex flex-col gap-3 mb-6">
           <button
             onClick={handleBuyNow}
-            className="w-full bg-black text-white py-4 font-black uppercase tracking-wider hover:bg-[#E63946] transition-colors flex items-center justify-center gap-2 shadow-md"
+            className="w-full bg-black dark:bg-white text-white dark:text-black py-4 font-black uppercase tracking-wider hover:bg-[#E63946] dark:hover:bg-[#E63946] dark:hover:text-white transition-colors flex items-center justify-center gap-2 shadow-md"
           >
             <Zap size={18} /> Buy Now
           </button>
           <button
             onClick={handleAddToCart}
-            className="w-full bg-white border-2 border-black text-black py-4 font-bold uppercase tracking-wider hover:bg-neutral-50 transition-colors"
+            className="w-full bg-white dark:bg-neutral-900 border-2 border-black dark:border-neutral-400 text-black dark:text-white py-4 font-bold uppercase tracking-wider hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
           >
             Add to Bag
           </button>
           <button
             onClick={() => toggleItem(product.id)}
-            className="w-full bg-transparent border border-neutral-200 text-neutral-600 py-3 font-semibold uppercase tracking-wider hover:border-black hover:text-black transition-colors flex justify-center items-center gap-2 text-sm"
+            className="w-full bg-transparent border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 py-3 font-semibold uppercase tracking-wider hover:border-black dark:hover:border-white hover:text-black dark:hover:text-white transition-colors flex justify-center items-center gap-2 text-sm"
           >
             {mounted && hasItem(product.id) ? (
               <><Heart className="fill-current text-[#E63946]" size={16} /> Saved to Wishlist</>
@@ -190,7 +190,7 @@ export default function ProductClient({ product, colorVariants = [] }: { product
         </div>
 
         {/* Trust Badges */}
-        <div className="grid grid-cols-3 gap-2 mb-6 p-3 bg-neutral-50 border border-neutral-100">
+        <div className="grid grid-cols-3 gap-2 mb-6 p-3 bg-neutral-50 dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800">
           {[
             { icon: ShieldCheck, label: '100% Authentic', sub: 'Verified' },
             { icon: Truck, label: 'Ships in 24h', sub: 'All India' },
@@ -205,7 +205,7 @@ export default function ProductClient({ product, colorVariants = [] }: { product
         </div>
 
         {/* Description */}
-        <div className="border-t border-neutral-200 pt-5">
+        <div className="border-t border-neutral-200 dark:border-neutral-800 pt-5">
           <h3 className="font-bold mb-2 uppercase tracking-wide text-sm">Description</h3>
           <p className="text-neutral-600 text-sm leading-relaxed whitespace-pre-wrap">
             {product.description || 'No description available for this product.'}

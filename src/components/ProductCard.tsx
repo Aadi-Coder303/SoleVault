@@ -77,7 +77,7 @@ export default function ProductCard({ id, name, price, originalPrice, imageUrl, 
   const isWishlisted = mounted && hasItem(id);
 
   return (
-    <div className="group relative flex flex-col bg-white border border-transparent hover:border-neutral-200 hover:shadow-xl transition-all duration-300 ease-out-expo">
+    <div className="group relative flex flex-col bg-white dark:bg-neutral-900 border border-transparent hover:border-neutral-200 dark:hover:border-neutral-700 hover:shadow-xl dark:hover:shadow-neutral-900/50 transition-all duration-300 ease-out-expo">
       
       {/* Wishlist Icon */}
       <button 
@@ -105,7 +105,7 @@ export default function ProductCard({ id, name, price, originalPrice, imageUrl, 
       )}
 
       {/* Image Area */}
-      <Link href={`/products/${id}`} className="block relative aspect-square bg-neutral-100 overflow-hidden">
+      <Link href={`/products/${id}`} className="block relative aspect-square bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
         <div className="absolute inset-0 flex items-center justify-center text-neutral-400">
           {imageUrl ? (
             <>
@@ -129,12 +129,12 @@ export default function ProductCard({ id, name, price, originalPrice, imageUrl, 
         {/* Quick Add CTA on Hover */}
         <div className="absolute bottom-0 left-0 w-full p-2 sm:p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out-expo">
           {showSizes ? (
-            <div className="bg-white/95 backdrop-blur-sm border border-black p-2 flex gap-1 sm:gap-2 justify-center flex-wrap animate-scale-in" onClick={(e) => e.preventDefault()}>
+            <div className="bg-white/95 dark:bg-neutral-900/95 backdrop-blur-sm border border-black dark:border-neutral-600 p-2 flex gap-1 sm:gap-2 justify-center flex-wrap animate-scale-in" onClick={(e) => e.preventDefault()}>
               {availableSizes.length > 0 ? availableSizes.map((size) => (
                 <button
                   key={size}
                   onClick={(e) => handleSizeSelect(e, size)}
-                  className="px-1.5 py-1 sm:px-2 border border-neutral-300 text-[10px] sm:text-xs font-bold hover:bg-black hover:text-white transition-colors duration-150 btn-press"
+                  className="px-1.5 py-1 sm:px-2 border border-neutral-300 dark:border-neutral-600 text-[10px] sm:text-xs font-bold hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors duration-150 btn-press"
                 >
                   {size.replace('UK ', '')}
                 </button>
@@ -152,7 +152,7 @@ export default function ProductCard({ id, name, price, originalPrice, imageUrl, 
             <button 
               onClick={handleQuickAddClick}
               disabled={availableSizes.length === 0}
-              className="w-full bg-white/90 backdrop-blur-sm border border-black text-black py-2 sm:py-3 text-xs sm:text-sm font-bold uppercase tracking-wider hover:bg-[#E63946] hover:border-[#E63946] hover:text-white transition-all duration-200 disabled:opacity-50 disabled:hover:bg-white/90 disabled:hover:text-black disabled:hover:border-black btn-press"
+              className="w-full bg-white/90 dark:bg-neutral-900/90 backdrop-blur-sm border border-black dark:border-neutral-500 text-black dark:text-white py-2 sm:py-3 text-xs sm:text-sm font-bold uppercase tracking-wider hover:bg-[#E63946] hover:border-[#E63946] hover:text-white transition-all duration-200 disabled:opacity-50 disabled:hover:bg-white/90 dark:disabled:hover:bg-neutral-900/90 disabled:hover:text-black dark:disabled:hover:text-white disabled:hover:border-black dark:disabled:hover:border-neutral-500 btn-press"
             >
               {availableSizes.length === 0 ? 'Sold Out' : 'Quick Add'}
             </button>
@@ -168,7 +168,7 @@ export default function ProductCard({ id, name, price, originalPrice, imageUrl, 
         </div>
         
         <Link href={`/products/${id}`}>
-          <h3 className="font-semibold text-xs sm:text-sm text-black truncate group-hover:text-[#E63946] transition-colors duration-200">{name}</h3>
+          <h3 className="font-semibold text-xs sm:text-sm text-black dark:text-neutral-100 truncate group-hover:text-[#E63946] transition-colors duration-200">{name}</h3>
         </Link>
         
         <div className="flex items-center gap-2 mt-0.5 sm:mt-1">

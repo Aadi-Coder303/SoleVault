@@ -24,6 +24,9 @@ model Product {
   sizes       Json     @default("{}")
   colorName   String?                        // e.g. "Triple Black", "University Blue"
   parentId    String?                        // links to parent product for color grouping
+  isSourced   Boolean  @default(false)       // true = not in hand, will be procured on order
+  sourcedDeliveryEstimate String?            // e.g. "7-14 business days"
+  sourcedNote String?                        // e.g. "Ships from US warehouse"
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   orders      Order[]
@@ -41,6 +44,8 @@ model Order {
   items         Json     // [{ productId, name, size, price, qty }]
   couponCode    String?  // coupon code used, if any
   discount      Float    @default(0) // discount amount applied
+  trackingId    String?  // shipment tracking number
+  trackingCarrier String? // carrier name: Delhivery, BlueDart, DTDC, etc.
   payuResponse  Json?    // raw PayU callback payload
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

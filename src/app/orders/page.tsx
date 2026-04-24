@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import { Loader2, Package, Clock, CheckCircle, XCircle, Truck } from 'lucide-react';
+import { Loader2, Package, Clock, CheckCircle, XCircle, Truck, ExternalLink, Copy } from 'lucide-react';
 import { formatCurrency } from '@/lib/formatCurrency';
 import Link from 'next/link';
 
@@ -21,15 +21,32 @@ interface Order {
   items: OrderItem[];
   createdAt: string;
   address: string;
+  trackingId?: string | null;
+  trackingCarrier?: string | null;
 }
 
 const statusConfig: Record<string, { label: string; icon: any; color: string }> = {
-  paid: { label: 'Confirmed', icon: CheckCircle, color: 'text-green-600 bg-green-50 border-green-200' },
-  cod_pending: { label: 'COD – Pending', icon: Clock, color: 'text-amber-600 bg-amber-50 border-amber-200' },
-  pending: { label: 'Processing', icon: Clock, color: 'text-amber-600 bg-amber-50 border-amber-200' },
-  shipped: { label: 'Shipped', icon: Truck, color: 'text-blue-600 bg-blue-50 border-blue-200' },
-  failed: { label: 'Failed', icon: XCircle, color: 'text-red-600 bg-red-50 border-red-200' },
+  paid: { label: 'Confirmed', icon: CheckCircle, color: 'text-green-600 bg-green-50 border-green-200 dark:bg-green-900/30 dark:border-green-800' },
+  cod_pending: { label: 'COD – Pending', icon: Clock, color: 'text-amber-600 bg-amber-50 border-amber-200 dark:bg-amber-900/30 dark:border-amber-800' },
+  pending: { label: 'Processing', icon: Clock, color: 'text-amber-600 bg-amber-50 border-amber-200 dark:bg-amber-900/30 dark:border-amber-800' },
+  shipped: { label: 'Shipped', icon: Truck, color: 'text-blue-600 bg-blue-50 border-blue-200 dark:bg-blue-900/30 dark:border-blue-800' },
+  delivered: { label: 'Delivered', icon: CheckCircle, color: 'text-green-600 bg-green-50 border-green-200 dark:bg-green-900/30 dark:border-green-800' },
+  failed: { label: 'Failed', icon: XCircle, color: 'text-red-600 bg-red-50 border-red-200 dark:bg-red-900/30 dark:border-red-800' },
 };
+
+function getTrackingUrl(carrier: string | null | undefined, trackingId: string | null | undefined): string {
+  if (!trackingId) return '#';
+  const id = encodeURIComponent(trackingId);
+  switch (carrier) {
+    case 'Delhivery': return `https://www.delhivery.com/track/package/${id}`;
+    case 'BlueDart': return `https://www.bluedart.com/tracking/${id}`;
+    case 'DTDC': return `https://www.dtdc.in/tracking/${id}`;
+    case 'Ecom Express': return `https://ecomexpress.in/tracking/?awb_field=${id}`;
+    case 'India Post': return `https://www.indiapost.gov.in/_layouts/15/dop.portal.tracking/trackconsignment.aspx`;
+    case 'FedEx': return `https://www.fedex.com/fedextrack/?trknbr=${id}`;
+    default: return `https://www.google.com/search?q=track+shipment+${id}`;
+  }
+}
 
 export default function MyOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -149,9 +166,41 @@ export default function MyOrdersPage() {
                     ))}
                   </div>
                   {order.address && (
-                    <p className="text-xs text-neutral-400 mt-3 pt-3 border-t border-neutral-100 truncate">
+                    <p className="text-xs text-neutral-400 mt-3 pt-3 border-t border-neutral-100 dark:border-neutral-800 truncate">
                       📍 {order.address}
                     </p>
+                  )}
+                  {/* Tracking info */}
+                  {order.trackingId && (
+                    <div className="mt-3 pt-3 border-t border-neutral-100 dark:border-neutral-800">
+                      <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 p-3">
+                        <Truck size={14} className="text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-bold text-blue-700 dark:text-blue-300 uppercase tracking-wide">
+                            {order.trackingCarrier || 'Shipment'} Tracking
+                          </p>
+                          <p className="text-sm font-mono text-blue-900 dark:text-blue-200 mt-0.5">{order.trackingId}</p>
+                        </div>
+                        <div className="flex gap-1.5 flex-shrink-0">
+                          <button
+                            onClick={() => { navigator.clipboard.writeText(order.trackingId!); }}
+                            className="text-blue-400 hover:text-blue-700 dark:hover:text-blue-200 transition-colors"
+                            title="Copy tracking ID"
+                          >
+                            <Copy size={14} />
+                          </button>
+                          <a
+                            href={getTrackingUrl(order.trackingCarrier, order.trackingId)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-400 hover:text-blue-700 dark:hover:text-blue-200 transition-colors"
+                            title="Track shipment"
+                          >
+                            <ExternalLink size={14} />
+                          </a>
+                        </div>
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>

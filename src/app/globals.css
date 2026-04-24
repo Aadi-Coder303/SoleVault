@@ -9,7 +9,13 @@
   --accent-glow: rgba(230, 57, 70, 0.15);
 }
 
-/* Force light mode — SoleVault is a light-mode brand */
+.dark {
+  --background: #0a0a0a;
+  --foreground: #f5f5f5;
+  --accent: #E63946;
+  --accent-glow: rgba(230, 57, 70, 0.25);
+}
+
 body {
   color: var(--foreground);
   background: var(--background);
@@ -42,6 +48,12 @@ html {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #a3a3a3;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #404040;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #525252;
 }
 
 /* Page transition wrapper */
@@ -98,6 +110,10 @@ html {
     background-size: 200% 100%;
     animation: shimmer 1.5s infinite;
   }
+  .dark .shimmer {
+    background: linear-gradient(90deg, #1a1a1a 25%, #262626 50%, #1a1a1a 75%);
+    background-size: 200% 100%;
+  }
 }
 
 @keyframes shimmer {
@@ -123,4 +139,9 @@ img[src=""] {
 /* Input focus transition */
 input:focus, textarea:focus {
   transition: border-color 0.2s ease;
+}
+
+/* Dark mode transition */
+html {
+  transition: background-color 0.3s ease, color 0.3s ease;
 }

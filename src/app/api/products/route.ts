@@ -45,7 +45,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { name, brand, description, price, imageUrl, sizes, category, colorName, parentId } = body;
+    const { name, brand, description, price, imageUrl, sizes, category, colorName, parentId, isSourced, sourcedDeliveryEstimate, sourcedNote } = body;
 
     if (!name || price === undefined || price === null) {
       return NextResponse.json({ error: 'Name and price are required' }, { status: 400 });
@@ -62,6 +62,9 @@ export async function POST(req: Request) {
         sizes: sizes || {},
         colorName: colorName || null,
         parentId: parentId || null,
+        isSourced: isSourced || false,
+        sourcedDeliveryEstimate: sourcedDeliveryEstimate || null,
+        sourcedNote: sourcedNote || null,
       },
     });
 
@@ -75,7 +78,7 @@ export async function POST(req: Request) {
 export async function PUT(req: Request) {
   try {
     const body = await req.json();
-    const { id, name, brand, description, price, imageUrl, sizes, category, colorName, parentId } = body;
+    const { id, name, brand, description, price, imageUrl, sizes, category, colorName, parentId, isSourced, sourcedDeliveryEstimate, sourcedNote } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'Product ID is required for update' }, { status: 400 });
@@ -97,6 +100,9 @@ export async function PUT(req: Request) {
         sizes,
         colorName: colorName || null,
         parentId: parentId || null,
+        isSourced: isSourced ?? undefined,
+        sourcedDeliveryEstimate: sourcedDeliveryEstimate ?? undefined,
+        sourcedNote: sourcedNote ?? undefined,
       },
     });
 

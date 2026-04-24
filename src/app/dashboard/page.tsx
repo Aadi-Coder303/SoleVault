@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Loader2, Plus, Minus, Edit2, RefreshCw, Trash2, ToggleLeft, ToggleRight, Tag, Eye, ShoppingCart, Copy, ClipboardCheck } from 'lucide-react';
+import { Loader2, Plus, Minus, Edit2, RefreshCw, Trash2, ToggleLeft, ToggleRight, Tag, Eye, ShoppingCart, Copy, ClipboardCheck, Package, Truck } from 'lucide-react';
 import { twMerge } from 'tailwind-merge';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -25,18 +25,23 @@ interface ProductData {
   sizes: Record<string, number | { stock: number; price: number }>;
   colorName?: string | null;
   parentId?: string | null;
+  isSourced?: boolean;
+  sourcedDeliveryEstimate?: string | null;
+  sourcedNote?: string | null;
 }
 
 interface OrderData {
   id: string; txnid: string; status: string; amount: number;
   customerName: string; customerEmail: string; customerPhone: string;
   address: string; items: any[]; createdAt: string;
+  trackingId?: string | null;
+  trackingCarrier?: string | null;
 }
 
 export default function DashboardPage() {
   const router = useRouter();
   const supabase = createClient();
-  const [activeTab, setActiveTab] = useState<'inventory' | 'pending' | 'confirmed' | 'shipped' | 'coupons' | 'activity'>('pending');
+  const [activeTab, setActiveTab] = useState<'inventory' | 'pending' | 'confirmed' | 'shipped' | 'coupons' | 'activity' | 'sourced'>('pending');
   const [products, setProducts] = useState<ProductData[]>([]);
   const [orders, setOrders] = useState<OrderData[]>([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
@@ -63,6 +68,9 @@ export default function DashboardPage() {
   const [sizes, setSizes] = useState<Record<string, number | { stock: number; price: number }>>({});
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
 
+  // Tracking state per order
+  const [trackingInputs, setTrackingInputs] = useState<Record<string, { id: string; carrier: string }>>({});
+
   // Color variant state
   const [isColorVariant, setIsColorVariant] = useState(false);
   const [colorName, setColorName] = useState('');
@@ -70,6 +78,11 @@ export default function DashboardPage() {
 
   // Per-size pricing state
   const [perSizePricing, setPerSizePricing] = useState(false);
+
+  // Sourced item state
+  const [isSourcedItem, setIsSourcedItem] = useState(false);
+  const [sourcedDeliveryEstimate, setSourcedDeliveryEstimate] = useState('');
+  const [sourcedNote, setSourcedNote] = useState('');
 
   const fetchProducts = async () => {
     setIsLoadingProducts(true);
@@ -178,12 +191,16 @@ export default function DashboardPage() {
         sizes,
         colorName: isColorVariant ? colorName : null,
         parentId: isColorVariant ? parentId : null,
+        isSourced: isSourcedItem,
+        sourcedDeliveryEstimate: isSourcedItem ? sourcedDeliveryEstimate : null,
+        sourcedNote: isSourcedItem ? sourcedNote : null,
       };
       const res = await fetch('/api/products', { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       if (!res.ok) throw new Error('Failed');
       toast.success(`Product ${editingId ? 'updated' : 'added'}!`);
       setEditingId(null); setUrl(''); setFormData({ name: '', brand: '', price: '', description: '', imageUrl: '', category: 'Men' }); setSizes({});
       setIsColorVariant(false); setColorName(''); setParentId(null); setPerSizePricing(false);
+      setIsSourcedItem(false); setSourcedDeliveryEstimate(''); setSourcedNote('');
       fetchProducts();
     } catch { toast.error('Error saving product.'); }
     finally { setIsSaving(false); }
@@ -197,6 +214,10 @@ export default function DashboardPage() {
     setIsColorVariant(!!(p.colorName || p.parentId));
     setColorName(p.colorName || '');
     setParentId(p.parentId || null);
+    // Detect sourced
+    setIsSourcedItem(!!p.isSourced);
+    setSourcedDeliveryEstimate(p.sourcedDeliveryEstimate || '');
+    setSourcedNote(p.sourcedNote || '');
     // Detect per-size pricing
     const sizeVals = Object.values(p.sizes || {});
     const hasPricedSizes = sizeVals.length > 0 && typeof sizeVals[0] === 'object';
@@ -208,14 +229,24 @@ export default function DashboardPage() {
   const handleCancelEdit = () => {
     setEditingId(null); setFormData({ name: '', brand: '', price: '', description: '', imageUrl: '', category: 'Men' }); setSizes({});
     setIsColorVariant(false); setColorName(''); setParentId(null); setPerSizePricing(false);
+    setIsSourcedItem(false); setSourcedDeliveryEstimate(''); setSourcedNote('');
   };
 
   const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
     setUpdatingOrderId(orderId);
     try {
-      const res = await fetch('/api/orders/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderId, status: newStatus }) });
+      const tracking = trackingInputs[orderId];
+      const body: Record<string, any> = { orderId, status: newStatus };
+      // Attach tracking when shipping
+      if (newStatus === 'shipped' && tracking?.id) {
+        body.trackingId = tracking.id;
+        body.trackingCarrier = tracking.carrier || null;
+      }
+      const res = await fetch('/api/orders/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       if (res.ok) {
         toast.success(`Order updated to ${newStatus}!`);
+        // Clear tracking input for this order
+        setTrackingInputs(prev => { const next = { ...prev }; delete next[orderId]; return next; });
         fetchOrders();
       } else { toast.error('Failed to update order.'); }
     } catch { toast.error('Error updating order.'); }
@@ -228,6 +259,8 @@ export default function DashboardPage() {
   const shippedOrders = orders.filter(o => ['shipped', 'delivered'].includes(o.status));
   const totalRevenue = orders.filter(o => ['paid', 'confirmed', 'shipped', 'delivered'].includes(o.status)).reduce((s, o) => s + o.amount, 0);
   const activeCoupons = coupons.filter(c => c.isActive).length;
+  const sourcedProducts = products.filter(p => p.isSourced);
+  const inStockProducts = products.filter(p => !p.isSourced);
 
   // Coupon handlers
   const handleSaveCoupon = async (e: React.FormEvent) => {
@@ -327,20 +360,65 @@ export default function DashboardPage() {
                     )}>{isCodReq ? 'COD Request' : order.status}</span>
                   </td>
                   <td className="py-3 px-4 text-right">
-                    <div className="flex gap-2 justify-end flex-wrap">
-                      {isCodReq && (
-                        <>
-                          <button disabled={updatingOrderId === order.id} onClick={() => handleUpdateOrderStatus(order.id, 'cod_pending')} className="bg-green-600 text-white text-[10px] font-bold uppercase px-3 py-1.5 hover:bg-green-700 transition-colors disabled:opacity-50">Approve COD</button>
-                          <button disabled={updatingOrderId === order.id} onClick={() => handleUpdateOrderStatus(order.id, 'rejected')} className="bg-red-600 text-white text-[10px] font-bold uppercase px-3 py-1.5 hover:bg-red-700 transition-colors disabled:opacity-50">Reject</button>
-                        </>
-                      )}
-                      {(order.status === 'pending' || order.status === 'cod_pending' || order.status === 'paid') && (
-                        <button disabled={updatingOrderId === order.id} onClick={() => handleUpdateOrderStatus(order.id, 'confirmed')} className="bg-black text-white text-[10px] font-bold uppercase px-3 py-1.5 hover:bg-[#E63946] transition-colors disabled:opacity-50">Confirm</button>
-                      )}
+                    <div className="flex flex-col gap-2 items-end">
+                      <div className="flex gap-2 justify-end flex-wrap">
+                        {isCodReq && (
+                          <>
+                            <button disabled={updatingOrderId === order.id} onClick={() => handleUpdateOrderStatus(order.id, 'cod_pending')} className="bg-green-600 text-white text-[10px] font-bold uppercase px-3 py-1.5 hover:bg-green-700 transition-colors disabled:opacity-50">Approve COD</button>
+                            <button disabled={updatingOrderId === order.id} onClick={() => handleUpdateOrderStatus(order.id, 'rejected')} className="bg-red-600 text-white text-[10px] font-bold uppercase px-3 py-1.5 hover:bg-red-700 transition-colors disabled:opacity-50">Reject</button>
+                          </>
+                        )}
+                        {(order.status === 'pending' || order.status === 'cod_pending' || order.status === 'paid') && (
+                          <button disabled={updatingOrderId === order.id} onClick={() => handleUpdateOrderStatus(order.id, 'confirmed')} className="bg-black text-white text-[10px] font-bold uppercase px-3 py-1.5 hover:bg-[#E63946] transition-colors disabled:opacity-50">Confirm</button>
+                        )}
+                        {order.status === 'confirmed' && (
+                          <button disabled={updatingOrderId === order.id} onClick={() => handleUpdateOrderStatus(order.id, 'shipped')} className="bg-[#E63946] text-white text-[10px] font-bold uppercase px-3 py-1.5 hover:bg-black transition-colors disabled:opacity-50">Ship Order</button>
+                        )}
+                        {order.status === 'shipped' && (
+                          <span className="text-neutral-400 text-xs flex items-center gap-1"><Truck size={12} /> Shipped ✓</span>
+                        )}
+                      </div>
+                      {/* Tracking input — shown for confirmed orders before shipping */}
                       {order.status === 'confirmed' && (
-                        <button disabled={updatingOrderId === order.id} onClick={() => handleUpdateOrderStatus(order.id, 'shipped')} className="bg-[#E63946] text-white text-[10px] font-bold uppercase px-3 py-1.5 hover:bg-black transition-colors disabled:opacity-50">Mark Shipped</button>
+                        <div className="flex gap-1.5 mt-1 w-full max-w-[280px]">
+                          <select
+                            value={trackingInputs[order.id]?.carrier || ''}
+                            onChange={(e) => setTrackingInputs(prev => ({ ...prev, [order.id]: { ...prev[order.id] || { id: '' }, carrier: e.target.value } }))}
+                            className="border border-neutral-300 text-[10px] px-1.5 py-1 focus:outline-none focus:border-black w-24"
+                          >
+                            <option value="">Carrier</option>
+                            <option value="Delhivery">Delhivery</option>
+                            <option value="BlueDart">BlueDart</option>
+                            <option value="DTDC">DTDC</option>
+                            <option value="Ecom Express">Ecom Express</option>
+                            <option value="India Post">India Post</option>
+                            <option value="FedEx">FedEx</option>
+                            <option value="Other">Other</option>
+                          </select>
+                          <input
+                            type="text"
+                            placeholder="Tracking ID"
+                            value={trackingInputs[order.id]?.id || ''}
+                            onChange={(e) => setTrackingInputs(prev => ({ ...prev, [order.id]: { ...prev[order.id] || { carrier: '' }, id: e.target.value } }))}
+                            className="flex-1 border border-neutral-300 text-[10px] px-2 py-1 focus:outline-none focus:border-black font-mono"
+                          />
+                        </div>
                       )}
-                      {order.status === 'shipped' && <span className="text-neutral-400 text-xs">Shipped ✓</span>}
+                      {/* Show tracking if already shipped */}
+                      {order.trackingId && (
+                        <div className="text-[10px] text-neutral-500 flex items-center gap-1 mt-0.5">
+                          <Truck size={10} />
+                          <span className="font-semibold">{order.trackingCarrier || 'Tracking'}:</span>
+                          <span className="font-mono">{order.trackingId}</span>
+                          <button
+                            onClick={() => { navigator.clipboard.writeText(order.trackingId!); toast.success('Tracking ID copied!'); }}
+                            className="ml-1 text-neutral-400 hover:text-black"
+                            title="Copy tracking ID"
+                          >
+                            <Copy size={10} />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -388,6 +466,7 @@ export default function DashboardPage() {
             { key: 'confirmed', label: 'Confirmed', count: confirmedOrders.length },
             { key: 'shipped', label: 'Shipped', count: shippedOrders.length },
             { key: 'inventory', label: 'Inventory' },
+            { key: 'sourced', label: 'Sourced', count: sourcedProducts.length },
             { key: 'coupons', label: 'Coupons', count: activeCoupons },
             { key: 'activity', label: 'Activity', count: cartEvents.filter(e => {
               const age = Date.now() - new Date(e.createdAt).getTime();
@@ -519,6 +598,29 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 <div><label className="block text-sm font-semibold mb-1 mt-2">Description</label><textarea rows={3} value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} className="w-full border border-neutral-300 p-3 text-sm focus:outline-none focus:border-black resize-none" /></div>
+
+                {/* Sourced Item Toggle */}
+                <div className="border border-neutral-200 p-4 mt-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={isSourcedItem} onChange={(e) => { setIsSourcedItem(e.target.checked); if (!e.target.checked) { setSourcedDeliveryEstimate(''); setSourcedNote(''); } }} className="accent-amber-500" />
+                    <Package size={14} className="text-amber-600" />
+                    <span className="text-sm font-bold uppercase tracking-wide">Sourced / Pre-Order Item</span>
+                  </label>
+                  <p className="text-[10px] text-neutral-400 mt-1 ml-6">Enable if this item is not in hand and will be procured when ordered.</p>
+                  {isSourcedItem && (
+                    <div className="mt-3 flex flex-col gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold mb-1">Delivery Estimate</label>
+                        <input type="text" value={sourcedDeliveryEstimate} onChange={(e) => setSourcedDeliveryEstimate(e.target.value)} className="w-full border border-neutral-300 p-2.5 text-sm focus:outline-none focus:border-black" placeholder="e.g. 7-14 business days" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold mb-1">Note for Customers</label>
+                        <input type="text" value={sourcedNote} onChange={(e) => setSourcedNote(e.target.value)} className="w-full border border-neutral-300 p-2.5 text-sm focus:outline-none focus:border-black" placeholder="e.g. Ships from US warehouse" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 <button type="submit" disabled={isSaving} className="bg-[#E63946] text-white py-3 font-bold uppercase tracking-wider hover:bg-black transition-colors disabled:opacity-50">
                   {isSaving ? <Loader2 size={18} className="animate-spin inline mr-2" /> : null}{editingId ? 'Update Product' : 'Save Product'}
                 </button>
@@ -551,6 +653,39 @@ export default function DashboardPage() {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {activeTab === 'sourced' && (
+          <div className="border border-neutral-200 bg-white overflow-hidden">
+            <div className="flex justify-between items-center p-4 bg-amber-50 border-b border-amber-200">
+              <h2 className="text-lg font-bold uppercase tracking-wide flex items-center gap-2"><Package size={16} className="text-amber-600" /> Sourced / Pre-Order Items</h2>
+              <button onClick={fetchProducts} className="text-xs font-bold uppercase underline text-neutral-500 hover:text-black">Refresh</button>
+            </div>
+            {isLoadingProducts ? (
+              <div className="p-8 text-center"><Loader2 size={24} className="animate-spin mx-auto text-neutral-400" /></div>
+            ) : sourcedProducts.length === 0 ? (
+              <div className="p-8 text-center text-neutral-500 text-sm">No sourced items yet. Toggle &ldquo;Sourced / Pre-Order&rdquo; when adding a product in Inventory.</div>
+            ) : (
+              <div className="max-h-[700px] overflow-y-auto">
+                <table className="w-full text-left"><tbody>
+                  {sourcedProducts.map((p) => (
+                    <tr key={p.id} className="border-b border-neutral-200 hover:bg-neutral-50">
+                      <td className="py-3 px-4">
+                        <div className="font-semibold text-sm line-clamp-1">{p.name}</div>
+                        <div className="text-xs text-neutral-500">{p.brand} &bull; {formatCurrency(p.price)}{p.colorName ? ` • ${p.colorName}` : ''}</div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className="text-[10px] font-bold uppercase bg-amber-100 text-amber-800 px-2 py-1 rounded-sm">Pre-Order</span>
+                      </td>
+                      <td className="py-3 px-4 text-xs text-neutral-500">{p.sourcedDeliveryEstimate || '—'}</td>
+                      <td className="py-3 px-4 text-xs text-neutral-400 max-w-[150px] truncate">{p.sourcedNote || '—'}</td>
+                      <td className="py-3 px-4 text-right"><button onClick={() => handleEdit(p)} className="text-neutral-400 hover:text-black"><Edit2 size={16} /></button></td>
+                    </tr>
+                  ))}
+                </tbody></table>
+              </div>
+            )}
           </div>
         )}
 

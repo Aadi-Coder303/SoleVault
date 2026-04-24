@@ -3,12 +3,22 @@
 import { useState, Suspense } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ChevronDown } from 'lucide-react';
 import { twMerge } from 'tailwind-merge';
 import { OWNER_EMAILS } from '@/lib/constants';
 
+const COUNTRY_CODES = [
+  { code: '+91', country: 'IN', label: '🇮🇳 +91', name: 'India' },
+  { code: '+1', country: 'US', label: '🇺🇸 +1', name: 'USA' },
+  { code: '+44', country: 'GB', label: '🇬🇧 +44', name: 'UK' },
+  { code: '+971', country: 'AE', label: '🇦🇪 +971', name: 'UAE' },
+  { code: '+65', country: 'SG', label: '🇸🇬 +65', name: 'Singapore' },
+  { code: '+61', country: 'AU', label: '🇦🇺 +61', name: 'Australia' },
+];
+
 function LoginClient() {
   const [phone, setPhone] = useState('');
+  const [countryCode, setCountryCode] = useState('+91');
   const [otp, setOtp] = useState('');
   const [step, setStep] = useState<'options' | 'otp'>('options');
   const [loading, setLoading] = useState(false);
@@ -18,6 +28,8 @@ function LoginClient() {
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirect') || '/';
   const supabase = createClient();
+
+  const selectedCountry = COUNTRY_CODES.find(c => c.code === countryCode) || COUNTRY_CODES[0];
 
   const handleGoogleLogin = async () => {
     setLoading(true);
@@ -41,7 +53,7 @@ function LoginClient() {
       setError('Please enter a valid 10-digit phone number.');
       return;
     }
-    const fullPhone = `+91${digits}`;
+    const fullPhone = `${countryCode}${digits}`;
 
     setLoading(true);
     setError(null);
@@ -64,7 +76,7 @@ function LoginClient() {
     setLoading(true);
     setError(null);
 
-    const fullPhone = `+91${phone.replace(/\D/g, '')}`;
+    const fullPhone = `${countryCode}${phone.replace(/\D/g, '')}`;
     const { error } = await supabase.auth.verifyOtp({
       phone: fullPhone,
       token: otp,
@@ -88,18 +100,18 @@ function LoginClient() {
 
   return (
     <main className="min-h-[70vh] flex items-center justify-center container mx-auto px-4 py-12">
-      <div className="w-full max-w-md bg-neutral-50 p-8 border border-neutral-200 shadow-sm">
+      <div className="w-full max-w-md bg-neutral-50 dark:bg-neutral-900 p-8 border border-neutral-200 dark:border-neutral-800 shadow-sm">
         <h1 className="text-2xl font-bold uppercase tracking-wide text-center mb-2">
           {step === 'options' ? 'Welcome Back' : 'Verify Phone'}
         </h1>
         <p className="text-sm text-neutral-500 text-center mb-8">
           {step === 'options' 
             ? 'Sign in to your SoleVault account.' 
-            : `We sent a 6-digit code to +91 ${phone}.`}
+            : `We sent a 6-digit code to ${countryCode} ${phone}.`}
         </p>
 
         {error && (
-          <div className="bg-red-50 text-[#E63946] border border-red-200 p-3 text-sm font-medium mb-6">
+          <div className="bg-red-50 dark:bg-red-900/30 text-[#E63946] border border-red-200 dark:border-red-800 p-3 text-sm font-medium mb-6">
             {error}
           </div>
         )}
@@ -111,8 +123,8 @@ function LoginClient() {
               onClick={handleGoogleLogin}
               disabled={loading}
               className={twMerge(
-                "w-full bg-white border border-neutral-300 text-black py-3 font-bold tracking-wider transition-colors flex justify-center items-center gap-3",
-                loading ? "opacity-70 cursor-not-allowed" : "hover:bg-neutral-100"
+                "w-full bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-600 text-black dark:text-white py-3 font-bold tracking-wider transition-colors flex justify-center items-center gap-3",
+                loading ? "opacity-70 cursor-not-allowed" : "hover:bg-neutral-100 dark:hover:bg-neutral-700"
               )}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -125,9 +137,9 @@ function LoginClient() {
             </button>
 
             <div className="relative flex items-center py-2">
-              <div className="flex-grow border-t border-neutral-300"></div>
+              <div className="flex-grow border-t border-neutral-300 dark:border-neutral-700"></div>
               <span className="flex-shrink-0 mx-4 text-neutral-400 text-xs font-bold uppercase">or</span>
-              <div className="flex-grow border-t border-neutral-300"></div>
+              <div className="flex-grow border-t border-neutral-300 dark:border-neutral-700"></div>
             </div>
 
             {/* Phone OTP Form */}
@@ -135,7 +147,18 @@ function LoginClient() {
               <div>
                 <label htmlFor="phone" className="block text-sm font-semibold mb-2">Phone Number</label>
                 <div className="flex">
-                  <span className="inline-flex items-center px-3 bg-neutral-100 border border-r-0 border-neutral-300 text-sm font-semibold text-neutral-600 select-none">+91</span>
+                  <div className="relative">
+                    <select
+                      value={countryCode}
+                      onChange={(e) => setCountryCode(e.target.value)}
+                      className="appearance-none h-full bg-neutral-100 dark:bg-neutral-800 border border-r-0 border-neutral-300 dark:border-neutral-600 pl-3 pr-7 text-sm font-semibold text-neutral-700 dark:text-neutral-200 focus:outline-none focus:border-black dark:focus:border-white cursor-pointer"
+                    >
+                      {COUNTRY_CODES.map(c => (
+                        <option key={c.code} value={c.code}>{c.label}</option>
+                      ))}
+                    </select>
+                    <ChevronDown size={14} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
+                  </div>
                   <input
                     id="phone"
                     type="tel"
@@ -144,7 +167,7 @@ function LoginClient() {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
                     placeholder="98765 43210"
-                    className="w-full border border-neutral-300 p-3 text-sm focus:outline-none focus:border-black bg-white"
+                    className="w-full border border-neutral-300 dark:border-neutral-600 p-3 text-sm focus:outline-none focus:border-black dark:focus:border-white bg-white dark:bg-neutral-800 dark:text-white"
                   />
                 </div>
               </div>

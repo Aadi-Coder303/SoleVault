@@ -1,13 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { Search, Heart, ShoppingBag, Menu, User, LogOut, X, Package, LayoutDashboard } from 'lucide-react';
+import { Search, Heart, ShoppingBag, Menu, User, LogOut, X, Package, LayoutDashboard, Moon, Sun } from 'lucide-react';
 import { useCartStore } from '@/store/useCartStore';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
 import { OWNER_EMAILS } from '@/lib/constants';
+import { useTheme } from '@/components/ThemeProvider';
 
 export default function Navbar() {
   const [user, setUser] = useState<SupabaseUser | null>(null);
@@ -19,6 +20,7 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const router = useRouter();
   const supabase = createClient();
+  const { theme, toggleTheme } = useTheme();
 
   const isOwner = mounted && user?.email && OWNER_EMAILS.includes(user.email);
 
@@ -81,8 +83,8 @@ export default function Navbar() {
   return (
     <header className={`sticky top-0 z-50 w-full transition-all duration-300 ${
       scrolled
-        ? 'bg-white/90 backdrop-blur-md border-b border-neutral-200/80 shadow-sm'
-        : 'bg-white border-b border-neutral-200'
+        ? 'bg-white/90 dark:bg-neutral-950/90 backdrop-blur-md border-b border-neutral-200/80 dark:border-neutral-800/80 shadow-sm'
+        : 'bg-white dark:bg-neutral-950 border-b border-neutral-200 dark:border-neutral-800'
     }`}>
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         
@@ -102,14 +104,23 @@ export default function Navbar() {
 
         {/* Desktop Nav Links */}
         <nav className="hidden md:flex gap-8">
-          <Link href="/products?category=men" className="text-sm uppercase tracking-[0.08em] font-medium text-neutral-500 hover:text-black hover:underline underline-offset-4 transition-all">Men</Link>
-          <Link href="/products?category=women" className="text-sm uppercase tracking-[0.08em] font-medium text-neutral-500 hover:text-black hover:underline underline-offset-4 transition-all">Women</Link>
-          <Link href="/products?category=kids" className="text-sm uppercase tracking-[0.08em] font-medium text-neutral-500 hover:text-black hover:underline underline-offset-4 transition-all">Kids</Link>
-          <Link href="/products?category=sale" className="text-sm uppercase tracking-[0.08em] font-bold text-[#E63946] hover:text-black hover:underline underline-offset-4 transition-all">Sale</Link>
+          <Link href="/products?category=men" className="text-sm uppercase tracking-[0.08em] font-medium text-neutral-500 dark:text-neutral-400 hover:text-black dark:hover:text-white hover:underline underline-offset-4 transition-all">Men</Link>
+          <Link href="/products?category=women" className="text-sm uppercase tracking-[0.08em] font-medium text-neutral-500 dark:text-neutral-400 hover:text-black dark:hover:text-white hover:underline underline-offset-4 transition-all">Women</Link>
+          <Link href="/products?category=kids" className="text-sm uppercase tracking-[0.08em] font-medium text-neutral-500 dark:text-neutral-400 hover:text-black dark:hover:text-white hover:underline underline-offset-4 transition-all">Kids</Link>
+          <Link href="/products?category=sale" className="text-sm uppercase tracking-[0.08em] font-bold text-[#E63946] hover:text-black dark:hover:text-white hover:underline underline-offset-4 transition-all">Sale</Link>
         </nav>
 
         {/* Icons */}
         <div className="flex items-center gap-4 sm:gap-5">
+          {/* Theme toggle */}
+          <button
+            onClick={toggleTheme}
+            aria-label="Toggle dark mode"
+            className="hover:text-[#E63946] transition-colors mt-0.5"
+          >
+            {mounted && theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
+
           <div className="relative">
             <button 
               onClick={() => setShowSearch(!showSearch)} 
@@ -120,7 +131,7 @@ export default function Navbar() {
             </button>
             
             {showSearch && (
-              <div className="absolute top-8 right-0 bg-white border border-neutral-200 p-2 shadow-lg w-64 md:w-80">
+              <div className="absolute top-8 right-0 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 p-2 shadow-lg w-64 md:w-80">
                 <form onSubmit={handleSearchSubmit} className="flex gap-2">
                   <input 
                     type="text" 
@@ -128,9 +139,9 @@ export default function Navbar() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search for sneakers..." 
-                    className="w-full border border-neutral-300 p-2 text-sm focus:outline-none focus:border-black"
+                    className="w-full border border-neutral-300 dark:border-neutral-600 p-2 text-sm focus:outline-none focus:border-black dark:focus:border-white bg-white dark:bg-neutral-800 dark:text-white"
                   />
-                  <button type="submit" className="bg-black text-white px-3 text-xs font-bold uppercase hover:bg-[#E63946]">Go</button>
+                  <button type="submit" className="bg-black dark:bg-white text-white dark:text-black px-3 text-xs font-bold uppercase hover:bg-[#E63946] dark:hover:bg-[#E63946] dark:hover:text-white">Go</button>
                 </form>
               </div>
             )}
@@ -182,18 +193,18 @@ export default function Navbar() {
 
       {/* Mobile Menu Panel */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-neutral-200 bg-white animate-in slide-in-from-top duration-200">
+        <div className="md:hidden border-t border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 animate-in slide-in-from-top duration-200">
           <nav className="container mx-auto px-4 py-4 flex flex-col gap-1">
-            <Link href="/products?category=men" onClick={() => setMobileMenuOpen(false)} className="py-3 px-2 text-sm uppercase tracking-[0.08em] font-medium text-neutral-600 hover:text-black hover:bg-neutral-50 transition-all">Men</Link>
-            <Link href="/products?category=women" onClick={() => setMobileMenuOpen(false)} className="py-3 px-2 text-sm uppercase tracking-[0.08em] font-medium text-neutral-600 hover:text-black hover:bg-neutral-50 transition-all">Women</Link>
-            <Link href="/products?category=kids" onClick={() => setMobileMenuOpen(false)} className="py-3 px-2 text-sm uppercase tracking-[0.08em] font-medium text-neutral-600 hover:text-black hover:bg-neutral-50 transition-all">Kids</Link>
-            <Link href="/products?category=sale" onClick={() => setMobileMenuOpen(false)} className="py-3 px-2 text-sm uppercase tracking-[0.08em] font-bold text-[#E63946] hover:text-black hover:bg-neutral-50 transition-all">Sale</Link>
-            <div className="border-t border-neutral-200 mt-2 pt-2">
-              <Link href="/wishlist" onClick={() => setMobileMenuOpen(false)} className="py-3 px-2 text-sm uppercase tracking-[0.08em] font-medium text-neutral-600 hover:text-black hover:bg-neutral-50 transition-all flex items-center gap-2">
+            <Link href="/products?category=men" onClick={() => setMobileMenuOpen(false)} className="py-3 px-2 text-sm uppercase tracking-[0.08em] font-medium text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-all">Men</Link>
+            <Link href="/products?category=women" onClick={() => setMobileMenuOpen(false)} className="py-3 px-2 text-sm uppercase tracking-[0.08em] font-medium text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-all">Women</Link>
+            <Link href="/products?category=kids" onClick={() => setMobileMenuOpen(false)} className="py-3 px-2 text-sm uppercase tracking-[0.08em] font-medium text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-all">Kids</Link>
+            <Link href="/products?category=sale" onClick={() => setMobileMenuOpen(false)} className="py-3 px-2 text-sm uppercase tracking-[0.08em] font-bold text-[#E63946] hover:text-black dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-all">Sale</Link>
+            <div className="border-t border-neutral-200 dark:border-neutral-800 mt-2 pt-2">
+              <Link href="/wishlist" onClick={() => setMobileMenuOpen(false)} className="py-3 px-2 text-sm uppercase tracking-[0.08em] font-medium text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-all flex items-center gap-2">
                 <Heart size={16} /> Wishlist
               </Link>
               {mounted && user && (
-                <Link href="/orders" onClick={() => setMobileMenuOpen(false)} className="py-3 px-2 text-sm uppercase tracking-[0.08em] font-medium text-neutral-600 hover:text-black hover:bg-neutral-50 transition-all flex items-center gap-2">
+                <Link href="/orders" onClick={() => setMobileMenuOpen(false)} className="py-3 px-2 text-sm uppercase tracking-[0.08em] font-medium text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-all flex items-center gap-2">
                   <Package size={16} /> My Orders
                 </Link>
               )}
