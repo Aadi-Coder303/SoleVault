@@ -44,19 +44,34 @@ export async function POST(req: Request) {
             const product = await tx.product.findUnique({ where: { id: item.productId } });
             if (!product) continue;
 
-            const sizes = product.sizes as Record<string, number>;
+            const sizes = product.sizes as Record<string, number | { stock: number; price: number }>;
             const qty = item.qty ?? 1;
-            const currentStock = sizes[item.size] ?? 0;
-            const newStock = Math.max(0, currentStock - qty);
+            const currentVal = sizes[item.size];
+            
+            let newSizes: Record<string, any>;
+            if (typeof currentVal === 'object') {
+              const newStock = Math.max(0, currentVal.stock - qty);
+              newSizes = { ...sizes, [item.size]: { ...currentVal, stock: newStock } };
+              console.log(`[Inventory] ${product.name} | ${item.size}: ${currentVal.stock} → ${newStock}`);
+            } else {
+              const currentStock = (currentVal as number) ?? 0;
+              const newStock = Math.max(0, currentStock - qty);
+              newSizes = { ...sizes, [item.size]: newStock };
+              console.log(`[Inventory] ${product.name} | ${item.size}: ${currentStock} → ${newStock}`);
+            }
 
             await tx.product.update({
               where: { id: item.productId },
-              data: {
-                sizes: { ...sizes, [item.size]: newStock },
-              },
+              data: { sizes: newSizes },
             });
+          }
 
-            console.log(`[Inventory] ${product.name} | ${item.size}: ${currentStock} → ${newStock}`);
+          // 3. Increment coupon usage if applicable
+          if (order.couponCode) {
+            await tx.coupon.updateMany({
+              where: { code: order.couponCode },
+              data: { usedCount: { increment: 1 } },
+            });
           }
         });
       }

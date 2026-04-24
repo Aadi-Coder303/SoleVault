@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { twMerge } from 'tailwind-merge';
 import { OWNER_EMAILS } from '@/lib/constants';
 
-export default function LoginPage() {
+function LoginClient() {
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [step, setStep] = useState<'options' | 'otp'>('options');
@@ -15,6 +15,8 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get('redirect') || '/';
   const supabase = createClient();
 
   const handleGoogleLogin = async () => {
@@ -78,7 +80,7 @@ export default function LoginPage() {
       if (user?.email && OWNER_EMAILS.includes(user.email)) {
         router.push('/dashboard');
       } else {
-        router.push('/');
+        router.push(redirectTo);
       }
       router.refresh();
     }
@@ -198,5 +200,13 @@ export default function LoginPage() {
 
       </div>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-[70vh] flex items-center justify-center"><div className="animate-pulse text-neutral-400">Loading…</div></div>}>
+      <LoginClient />
+    </Suspense>
   );
 }

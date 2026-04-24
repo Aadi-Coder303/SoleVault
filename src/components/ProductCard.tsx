@@ -15,7 +15,7 @@ interface ProductCardProps {
   price: number;
   originalPrice?: number;
   imageUrl?: string;
-  sizes?: Record<string, number>;
+  sizes?: Record<string, number | { stock: number; price: number }>;
   rating?: number;
   reviewCount?: number;
 }
@@ -26,9 +26,21 @@ export default function ProductCard({ id, name, price, originalPrice, imageUrl, 
   const [mounted, setMounted] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
 
-  // Extract available sizes from JSON object
-  const availableSizes = sizes ? Object.keys(sizes).filter(size => sizes[size] > 0) : [];
-  const totalStock = sizes ? Object.values(sizes).reduce((a, b) => a + b, 0) : 0;
+  // Extract available sizes from JSON object (supports both formats)
+  const availableSizes = sizes ? Object.keys(sizes).filter(size => {
+    const val = sizes[size];
+    return typeof val === 'object' ? val.stock > 0 : (val as number) > 0;
+  }) : [];
+  const totalStock = sizes ? Object.values(sizes).reduce((a: number, b) => a + (typeof b === 'object' ? b.stock : (b as number)), 0) : 0;
+
+  // Calculate price range for display
+  const sizePrices = sizes ? Object.entries(sizes)
+    .filter(([, v]) => typeof v === 'object' ? v.stock > 0 : (v as number) > 0)
+    .map(([, v]) => typeof v === 'object' ? v.price : price)
+    .filter(p => p > 0) : [];
+  const minPrice = sizePrices.length > 0 ? Math.min(...sizePrices) : price;
+  const maxPrice = sizePrices.length > 0 ? Math.max(...sizePrices) : price;
+  const hasPriceRange = minPrice !== maxPrice;
 
   useEffect(() => {
     setMounted(true);
@@ -43,11 +55,13 @@ export default function ProductCard({ id, name, price, originalPrice, imageUrl, 
 
   const handleSizeSelect = (e: React.MouseEvent, size: string) => {
     e.preventDefault();
+    const sizeVal = sizes?.[size];
+    const sizePrice = sizeVal && typeof sizeVal === 'object' ? sizeVal.price : price;
     addItem({
       id: `${id}-${size}`,
       productId: id,
       name,
-      price,
+      price: sizePrice,
       size,
       imageUrl: imageUrl || '',
     });
@@ -158,7 +172,11 @@ export default function ProductCard({ id, name, price, originalPrice, imageUrl, 
         </Link>
         
         <div className="flex items-center gap-2 mt-0.5 sm:mt-1">
-          <span className="font-bold text-sm sm:text-base">{formatCurrency(price)}</span>
+          {hasPriceRange ? (
+            <span className="font-bold text-sm sm:text-base">{formatCurrency(minPrice)} – {formatCurrency(maxPrice)}</span>
+          ) : (
+            <span className="font-bold text-sm sm:text-base">{formatCurrency(price)}</span>
+          )}
           {originalPrice && (
             <span className="text-xs sm:text-sm text-neutral-400 line-through">{formatCurrency(originalPrice)}</span>
           )}

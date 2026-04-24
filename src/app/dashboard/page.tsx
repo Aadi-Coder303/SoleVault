@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Loader2, Plus, Minus, Edit2, RefreshCw } from 'lucide-react';
+import { Loader2, Plus, Minus, Edit2, RefreshCw, Trash2, ToggleLeft, ToggleRight, Tag } from 'lucide-react';
 import { twMerge } from 'tailwind-merge';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -22,7 +22,9 @@ const getActiveSizes = (category: string) => {
 interface ProductData {
   id: string; name: string; brand: string; price: number;
   description: string; imageUrl: string | null; category: string;
-  sizes: Record<string, number>;
+  sizes: Record<string, number | { stock: number; price: number }>;
+  colorName?: string | null;
+  parentId?: string | null;
 }
 
 interface OrderData {
@@ -34,11 +36,17 @@ interface OrderData {
 export default function DashboardPage() {
   const router = useRouter();
   const supabase = createClient();
-  const [activeTab, setActiveTab] = useState<'inventory' | 'pending' | 'confirmed' | 'shipped'>('pending');
+  const [activeTab, setActiveTab] = useState<'inventory' | 'pending' | 'confirmed' | 'shipped' | 'coupons'>('pending');
   const [products, setProducts] = useState<ProductData[]>([]);
   const [orders, setOrders] = useState<OrderData[]>([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [isLoadingOrders, setIsLoadingOrders] = useState(true);
+
+  // Coupon state
+  const [coupons, setCoupons] = useState<any[]>([]);
+  const [isLoadingCoupons, setIsLoadingCoupons] = useState(true);
+  const [isSavingCoupon, setIsSavingCoupon] = useState(false);
+  const [couponForm, setCouponForm] = useState({ code: '', discountType: 'percent', discountValue: '', minOrderValue: '', maxUses: '', expiresAt: '' });
 
   // Form State
   const [url, setUrl] = useState('');
@@ -46,8 +54,16 @@ export default function DashboardPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({ name: '', brand: '', price: '', description: '', imageUrl: '', category: 'Men' });
-  const [sizes, setSizes] = useState<Record<string, number>>({});
+  const [sizes, setSizes] = useState<Record<string, number | { stock: number; price: number }>>({});
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
+
+  // Color variant state
+  const [isColorVariant, setIsColorVariant] = useState(false);
+  const [colorName, setColorName] = useState('');
+  const [parentId, setParentId] = useState<string | null>(null);
+
+  // Per-size pricing state
+  const [perSizePricing, setPerSizePricing] = useState(false);
 
   const fetchProducts = async () => {
     setIsLoadingProducts(true);
@@ -67,6 +83,15 @@ export default function DashboardPage() {
     finally { setIsLoadingOrders(false); }
   };
 
+  const fetchCoupons = async () => {
+    setIsLoadingCoupons(true);
+    try {
+      const res = await fetch('/api/coupons');
+      if (res.ok) setCoupons(await res.json());
+    } catch (e) { console.error(e); }
+    finally { setIsLoadingCoupons(false); }
+  };
+
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -77,6 +102,7 @@ export default function DashboardPage() {
     checkAuth();
     fetchProducts();
     fetchOrders();
+    fetchCoupons();
   }, [supabase.auth, router]);
 
   const handleScrape = async () => {
@@ -94,7 +120,22 @@ export default function DashboardPage() {
   };
 
   const handleSizeChange = (size: string, delta: number) => {
-    setSizes(prev => ({ ...prev, [size]: Math.max(0, (prev[size] || 0) + delta) }));
+    setSizes(prev => {
+      const current = prev[size];
+      if (perSizePricing) {
+        const obj = typeof current === 'object' ? current : { stock: (current as number) || 0, price: Number(formData.price) || 0 };
+        return { ...prev, [size]: { ...obj, stock: Math.max(0, obj.stock + delta) } };
+      }
+      return { ...prev, [size]: Math.max(0, ((current as number) || 0) + delta) };
+    });
+  };
+
+  const handleSizePriceChange = (size: string, price: string) => {
+    setSizes(prev => {
+      const current = prev[size];
+      const obj = typeof current === 'object' ? current : { stock: (current as number) || 0, price: Number(formData.price) || 0 };
+      return { ...prev, [size]: { ...obj, price: Number(price) || 0 } };
+    });
   };
 
   const handleSaveProduct = async (e: React.FormEvent) => {
@@ -102,11 +143,19 @@ export default function DashboardPage() {
     setIsSaving(true);
     try {
       const method = editingId ? 'PUT' : 'POST';
-      const body = { ...(editingId ? { id: editingId } : {}), name: formData.name, brand: formData.brand, price: Number(formData.price), description: formData.description, imageUrl: formData.imageUrl, category: formData.category, sizes };
+      const body = {
+        ...(editingId ? { id: editingId } : {}),
+        name: formData.name, brand: formData.brand, price: Number(formData.price),
+        description: formData.description, imageUrl: formData.imageUrl, category: formData.category,
+        sizes,
+        colorName: isColorVariant ? colorName : null,
+        parentId: isColorVariant ? parentId : null,
+      };
       const res = await fetch('/api/products', { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       if (!res.ok) throw new Error('Failed');
       toast.success(`Product ${editingId ? 'updated' : 'added'}!`);
       setEditingId(null); setUrl(''); setFormData({ name: '', brand: '', price: '', description: '', imageUrl: '', category: 'Men' }); setSizes({});
+      setIsColorVariant(false); setColorName(''); setParentId(null); setPerSizePricing(false);
       fetchProducts();
     } catch { toast.error('Error saving product.'); }
     finally { setIsSaving(false); }
@@ -116,12 +165,21 @@ export default function DashboardPage() {
     setEditingId(p.id);
     setFormData({ name: p.name, brand: p.brand, price: p.price.toString(), description: p.description, imageUrl: p.imageUrl || '', category: p.category || 'Men' });
     setSizes(p.sizes || {});
+    // Detect color variant
+    setIsColorVariant(!!(p.colorName || p.parentId));
+    setColorName(p.colorName || '');
+    setParentId(p.parentId || null);
+    // Detect per-size pricing
+    const sizeVals = Object.values(p.sizes || {});
+    const hasPricedSizes = sizeVals.length > 0 && typeof sizeVals[0] === 'object';
+    setPerSizePricing(hasPricedSizes);
     setActiveTab('inventory');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleCancelEdit = () => {
     setEditingId(null); setFormData({ name: '', brand: '', price: '', description: '', imageUrl: '', category: 'Men' }); setSizes({});
+    setIsColorVariant(false); setColorName(''); setParentId(null); setPerSizePricing(false);
   };
 
   const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
@@ -141,6 +199,43 @@ export default function DashboardPage() {
   const confirmedOrders = orders.filter(o => ['paid', 'confirmed'].includes(o.status));
   const shippedOrders = orders.filter(o => ['shipped', 'delivered'].includes(o.status));
   const totalRevenue = orders.filter(o => ['paid', 'confirmed', 'shipped', 'delivered'].includes(o.status)).reduce((s, o) => s + o.amount, 0);
+  const activeCoupons = coupons.filter(c => c.isActive).length;
+
+  // Coupon handlers
+  const handleSaveCoupon = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingCoupon(true);
+    try {
+      const res = await fetch('/api/coupons', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(couponForm),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed');
+      toast.success('Coupon created!');
+      setCouponForm({ code: '', discountType: 'percent', discountValue: '', minOrderValue: '', maxUses: '', expiresAt: '' });
+      fetchCoupons();
+    } catch (err: any) { toast.error(err.message || 'Error creating coupon.'); }
+    finally { setIsSavingCoupon(false); }
+  };
+
+  const handleToggleCoupon = async (id: string, isActive: boolean) => {
+    try {
+      await fetch('/api/coupons', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, isActive: !isActive }) });
+      toast.success(`Coupon ${isActive ? 'deactivated' : 'activated'}!`);
+      fetchCoupons();
+    } catch { toast.error('Failed to update coupon.'); }
+  };
+
+  const handleDeleteCoupon = async (id: string) => {
+    if (!confirm('Delete this coupon?')) return;
+    try {
+      await fetch(`/api/coupons?id=${id}`, { method: 'DELETE' });
+      toast.success('Coupon deleted!');
+      fetchCoupons();
+    } catch { toast.error('Failed to delete coupon.'); }
+  };
 
   const renderOrders = (list: OrderData[], tab: string) => (
     <div className="border border-neutral-200 overflow-x-auto">
@@ -172,6 +267,7 @@ export default function DashboardPage() {
                   <td className="py-3 px-4">
                     <p className="font-semibold text-sm">{order.customerName}</p>
                     <p className="text-xs text-neutral-500">{order.customerPhone}</p>
+                    <p className="text-[10px] text-neutral-400 mt-0.5 line-clamp-2">{order.address}</p>
                   </td>
                   <td className="py-3 px-4 text-sm">
                     {items.map((it: any, i: number) => (
@@ -223,17 +319,18 @@ export default function DashboardPage() {
             <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#E63946] mb-1">Admin Panel</p>
             <h1 className="text-3xl font-black uppercase tracking-tight">Owner Dashboard</h1>
           </div>
-          <button onClick={() => { fetchProducts(); fetchOrders(); }} className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-neutral-500 hover:text-black transition-colors">
+          <button onClick={() => { fetchProducts(); fetchOrders(); fetchCoupons(); }} className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-neutral-500 hover:text-black transition-colors">
             <RefreshCw size={14} /> Refresh
           </button>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
           <div className="bg-white p-5 border border-neutral-200"><h3 className="text-[10px] text-neutral-500 uppercase tracking-widest mb-1">Revenue</h3><p className="text-xl font-black">{formatCurrency(totalRevenue)}</p></div>
           <div className="bg-white p-5 border border-neutral-200"><h3 className="text-[10px] text-neutral-500 uppercase tracking-widest mb-1">Pending</h3><p className="text-xl font-black">{pendingOrders.length}</p></div>
           <div className="bg-white p-5 border border-neutral-200"><h3 className="text-[10px] text-neutral-500 uppercase tracking-widest mb-1">Confirmed</h3><p className="text-xl font-black">{confirmedOrders.length}</p></div>
           <div className="bg-white p-5 border border-neutral-200"><h3 className="text-[10px] text-neutral-500 uppercase tracking-widest mb-1">Products</h3><p className="text-xl font-black">{products.length}</p></div>
+          <div className="bg-white p-5 border border-neutral-200"><h3 className="text-[10px] text-neutral-500 uppercase tracking-widest mb-1">Active Coupons</h3><p className="text-xl font-black">{activeCoupons}</p></div>
         </div>
 
         {/* Tabs */}
@@ -243,6 +340,7 @@ export default function DashboardPage() {
             { key: 'confirmed', label: 'Confirmed', count: confirmedOrders.length },
             { key: 'shipped', label: 'Shipped', count: shippedOrders.length },
             { key: 'inventory', label: 'Inventory' },
+            { key: 'coupons', label: 'Coupons', count: activeCoupons },
           ] as const).map(t => (
             <button key={t.key} onClick={() => setActiveTab(t.key)}
               className={twMerge("px-5 py-3 font-bold uppercase tracking-wide text-xs border-b-2 whitespace-nowrap transition-colors flex items-center gap-2",
@@ -293,18 +391,79 @@ export default function DashboardPage() {
                     <option value="Men">Men</option><option value="Women">Women</option><option value="Kids">Kids</option>
                   </select>
                 </div>
-                <div className="mt-2"><label className="block text-sm font-semibold mb-2">Inventory by Size</label>
-                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                    {getActiveSizes(formData.category).map(size => (
-                      <div key={size} className={twMerge("flex flex-col items-center p-2 border", sizes[size] > 0 ? "border-[#E63946] bg-red-50" : "border-neutral-200")}>
-                        <span className="text-[10px] font-bold mb-1">{size}</span>
-                        <div className="flex items-center gap-1">
-                          <button type="button" onClick={() => handleSizeChange(size, -1)} className="p-0.5 hover:bg-neutral-200"><Minus size={12} /></button>
-                          <span className="text-xs font-semibold w-4 text-center">{sizes[size] || 0}</span>
-                          <button type="button" onClick={() => handleSizeChange(size, 1)} className="p-0.5 hover:bg-neutral-200"><Plus size={12} /></button>
-                        </div>
+                {/* Color Variant Section */}
+                <div className="border border-neutral-200 p-4 mt-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={isColorVariant} onChange={(e) => { setIsColorVariant(e.target.checked); if (!e.target.checked) { setParentId(null); setColorName(''); } }} className="accent-[#E63946]" />
+                    <span className="text-sm font-bold uppercase tracking-wide">Color Variant</span>
+                  </label>
+                  {isColorVariant && (
+                    <div className="mt-3 flex flex-col gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold mb-1">Color Name *</label>
+                        <input type="text" value={colorName} onChange={(e) => setColorName(e.target.value)} className="w-full border border-neutral-300 p-2.5 text-sm focus:outline-none focus:border-black" placeholder="e.g. Triple Black" />
                       </div>
-                    ))}
+                      <div>
+                        <label className="block text-xs font-semibold mb-1">Parent Shoe (select existing product)</label>
+                        <select value={parentId || ''} onChange={(e) => setParentId(e.target.value || null)} className="w-full border border-neutral-300 p-2.5 text-sm focus:outline-none focus:border-black">
+                          <option value="">— None (this is the first color) —</option>
+                          {products.filter(p => p.id !== editingId).map(p => (
+                            <option key={p.id} value={p.id}>{p.name} {p.colorName ? `(${p.colorName})` : ''}</option>
+                          ))}
+                        </select>
+                        <p className="text-[10px] text-neutral-400 mt-1">Leave empty if this is the first color of a new shoe. Select a shoe to link as another color.</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="mt-2"><label className="block text-sm font-semibold mb-2">Inventory by Size</label>
+                  {/* Per-Size Pricing Toggle */}
+                  <label className="flex items-center gap-2 mb-3 cursor-pointer">
+                    <input type="checkbox" checked={perSizePricing} onChange={(e) => {
+                      const enabled = e.target.checked;
+                      setPerSizePricing(enabled);
+                      if (enabled) {
+                        // Convert plain numbers to objects
+                        setSizes(prev => {
+                          const next: Record<string, { stock: number; price: number }> = {};
+                          for (const [k, v] of Object.entries(prev)) {
+                            if (typeof v === 'object') next[k] = v;
+                            else next[k] = { stock: v, price: Number(formData.price) || 0 };
+                          }
+                          return next;
+                        });
+                      } else {
+                        // Convert objects back to plain numbers
+                        setSizes(prev => {
+                          const next: Record<string, number> = {};
+                          for (const [k, v] of Object.entries(prev)) {
+                            next[k] = typeof v === 'object' ? v.stock : v;
+                          }
+                          return next;
+                        });
+                      }
+                    }} className="accent-[#E63946]" />
+                    <span className="text-xs font-bold uppercase tracking-wide">Different Prices per Size</span>
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {getActiveSizes(formData.category).map(size => {
+                      const val = sizes[size];
+                      const stock = typeof val === 'object' ? val.stock : (val as number) || 0;
+                      const sizePrice = typeof val === 'object' ? val.price : Number(formData.price) || 0;
+                      return (
+                        <div key={size} className={twMerge("flex flex-col items-center p-2 border", stock > 0 ? "border-[#E63946] bg-red-50" : "border-neutral-200")}>
+                          <span className="text-[10px] font-bold mb-1">{size}</span>
+                          <div className="flex items-center gap-1">
+                            <button type="button" onClick={() => handleSizeChange(size, -1)} className="p-0.5 hover:bg-neutral-200"><Minus size={12} /></button>
+                            <span className="text-xs font-semibold w-4 text-center">{stock}</span>
+                            <button type="button" onClick={() => handleSizeChange(size, 1)} className="p-0.5 hover:bg-neutral-200"><Plus size={12} /></button>
+                          </div>
+                          {perSizePricing && (
+                            <input type="number" value={sizePrice || ''} onChange={(e) => handleSizePriceChange(size, e.target.value)} className="w-full mt-1 border border-neutral-300 p-1 text-[10px] text-center focus:outline-none focus:border-black" placeholder="₹ Price" />
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
                 <div><label className="block text-sm font-semibold mb-1 mt-2">Description</label><textarea rows={3} value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} className="w-full border border-neutral-300 p-3 text-sm focus:outline-none focus:border-black resize-none" /></div>
@@ -327,12 +486,91 @@ export default function DashboardPage() {
                 <div className="max-h-[700px] overflow-y-auto">
                   <table className="w-full text-left"><tbody>
                     {products.map((p) => {
-                      const totalStock = Object.values(p.sizes || {}).reduce((a, b) => a + b, 0);
+                      const totalStock = Object.values(p.sizes || {}).reduce((a: number, b) => a + (typeof b === 'object' ? b.stock : (b as number)), 0);
                       return (
                         <tr key={p.id} className={twMerge("border-b border-neutral-200 hover:bg-neutral-50", editingId === p.id && "bg-neutral-100")}>
-                          <td className="py-3 px-4"><div className="font-semibold text-sm line-clamp-1">{p.name}</div><div className="text-xs text-neutral-500">{p.brand} • {formatCurrency(p.price)}</div></td>
+                          <td className="py-3 px-4"><div className="font-semibold text-sm line-clamp-1">{p.name}</div><div className="text-xs text-neutral-500">{p.brand} • {formatCurrency(p.price)}{p.colorName ? ` • ${p.colorName}` : ''}</div></td>
                           <td className="py-3 px-4 text-center"><span className={twMerge("text-xs font-bold px-2 py-1", totalStock > 0 ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800")}>{totalStock} in stock</span></td>
                           <td className="py-3 px-4 text-right"><button onClick={() => handleEdit(p)} className="text-neutral-400 hover:text-black"><Edit2 size={16} /></button></td>
+                        </tr>
+                      );
+                    })}
+                  </tbody></table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'coupons' && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Create Coupon Form */}
+            <form onSubmit={handleSaveCoupon} className="flex flex-col gap-4 p-6 border border-neutral-200 bg-white self-start">
+              <h2 className="text-lg font-bold uppercase tracking-wide border-b border-neutral-200 pb-2">Create Coupon</h2>
+              <div className="grid grid-cols-2 gap-4">
+                <div><label className="block text-sm font-semibold mb-1">Code *</label><input type="text" required value={couponForm.code} onChange={e => setCouponForm({...couponForm, code: e.target.value.toUpperCase()})} className="w-full border border-neutral-300 p-3 text-sm uppercase tracking-wider focus:outline-none focus:border-black" placeholder="SAVE10" /></div>
+                <div><label className="block text-sm font-semibold mb-1">Type</label>
+                  <select value={couponForm.discountType} onChange={e => setCouponForm({...couponForm, discountType: e.target.value})} className="w-full border border-neutral-300 p-3 text-sm focus:outline-none focus:border-black">
+                    <option value="percent">Percentage (%)</option>
+                    <option value="flat">Flat (₹)</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><label className="block text-sm font-semibold mb-1">Discount Value *</label><input type="number" required value={couponForm.discountValue} onChange={e => setCouponForm({...couponForm, discountValue: e.target.value})} className="w-full border border-neutral-300 p-3 text-sm focus:outline-none focus:border-black" placeholder="10" /></div>
+                <div><label className="block text-sm font-semibold mb-1">Min Order (₹)</label><input type="number" value={couponForm.minOrderValue} onChange={e => setCouponForm({...couponForm, minOrderValue: e.target.value})} className="w-full border border-neutral-300 p-3 text-sm focus:outline-none focus:border-black" placeholder="0" /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><label className="block text-sm font-semibold mb-1">Max Uses (0=unlimited)</label><input type="number" value={couponForm.maxUses} onChange={e => setCouponForm({...couponForm, maxUses: e.target.value})} className="w-full border border-neutral-300 p-3 text-sm focus:outline-none focus:border-black" placeholder="0" /></div>
+                <div><label className="block text-sm font-semibold mb-1">Expires At</label><input type="date" value={couponForm.expiresAt} onChange={e => setCouponForm({...couponForm, expiresAt: e.target.value})} className="w-full border border-neutral-300 p-3 text-sm focus:outline-none focus:border-black" /></div>
+              </div>
+              <button type="submit" disabled={isSavingCoupon} className="bg-[#E63946] text-white py-3 font-bold uppercase tracking-wider hover:bg-black transition-colors disabled:opacity-50">
+                {isSavingCoupon ? <Loader2 size={18} className="animate-spin inline mr-2" /> : null}Create Coupon
+              </button>
+            </form>
+
+            {/* Coupons List */}
+            <div className="border border-neutral-200 bg-white overflow-hidden self-start">
+              <div className="flex justify-between items-center p-4 bg-neutral-50 border-b border-neutral-200">
+                <h2 className="text-lg font-bold uppercase tracking-wide flex items-center gap-2"><Tag size={16} /> All Coupons</h2>
+                <button onClick={fetchCoupons} className="text-xs font-bold uppercase underline text-neutral-500 hover:text-black">Refresh</button>
+              </div>
+              {isLoadingCoupons ? (
+                <div className="p-8 text-center"><Loader2 size={24} className="animate-spin mx-auto text-neutral-400" /></div>
+              ) : coupons.length === 0 ? (
+                <div className="p-8 text-center text-neutral-500 text-sm">No coupons yet.</div>
+              ) : (
+                <div className="max-h-[600px] overflow-y-auto">
+                  <table className="w-full text-left"><tbody>
+                    {coupons.map(c => {
+                      const expired = c.expiresAt && new Date(c.expiresAt) < new Date();
+                      return (
+                        <tr key={c.id} className="border-b border-neutral-200 hover:bg-neutral-50">
+                          <td className="py-3 px-4">
+                            <div className="font-bold text-sm tracking-wider">{c.code}</div>
+                            <div className="text-xs text-neutral-500">
+                              {c.discountType === 'percent' ? `${c.discountValue}% off` : `₹${c.discountValue} off`}
+                              {c.minOrderValue > 0 && <span> · Min ₹{c.minOrderValue}</span>}
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <span className="text-xs font-semibold">{c.usedCount}{c.maxUses > 0 ? `/${c.maxUses}` : ''} used</span>
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <span className={twMerge("text-[10px] font-bold uppercase px-2 py-1 rounded-sm", expired ? "bg-red-100 text-red-800" : c.isActive ? "bg-green-100 text-green-800" : "bg-neutral-100 text-neutral-600")}>
+                              {expired ? 'Expired' : c.isActive ? 'Active' : 'Inactive'}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <div className="flex gap-2 justify-end">
+                              <button onClick={() => handleToggleCoupon(c.id, c.isActive)} className="text-neutral-400 hover:text-black" title={c.isActive ? 'Deactivate' : 'Activate'}>
+                                {c.isActive ? <ToggleRight size={18} className="text-green-600" /> : <ToggleLeft size={18} />}
+                              </button>
+                              <button onClick={() => handleDeleteCoupon(c.id)} className="text-neutral-400 hover:text-red-500" title="Delete">
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </td>
                         </tr>
                       );
                     })}

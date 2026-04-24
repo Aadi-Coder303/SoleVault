@@ -8,22 +8,27 @@ interface SizeOption {
   label: string;
   available: boolean;
   stock?: number;
+  price?: number;
 }
 
 interface SizeSelectorProps {
   sizes: SizeOption[];
-  onSelect?: (sizeId: string) => void;
+  onSelect?: (sizeId: string, price?: number) => void;
 }
 
 export default function SizeSelector({ sizes, onSelect }: SizeSelectorProps) {
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [showSizeGuide, setShowSizeGuide] = useState(false);
 
-  const handleSelect = (sizeId: string, available: boolean) => {
+  const handleSelect = (sizeId: string, available: boolean, price?: number) => {
     if (!available) return;
     setSelectedSize(sizeId);
-    if (onSelect) onSelect(sizeId);
+    if (onSelect) onSelect(sizeId, price);
   };
+
+  // Check if sizes have varying prices
+  const prices = sizes.filter(s => s.available && s.price).map(s => s.price!);
+  const hasVaryingPrices = prices.length > 0 && new Set(prices).size > 1;
 
   return (
     <div className="w-full">
@@ -36,16 +41,21 @@ export default function SizeSelector({ sizes, onSelect }: SizeSelectorProps) {
           <button
             key={size.id}
             disabled={!size.available}
-            onClick={() => handleSelect(size.id, size.available)}
+            onClick={() => handleSelect(size.id, size.available, size.price)}
             className={twMerge(
-              "relative py-3 text-sm font-medium border transition-colors min-h-[48px]",
+              "relative py-2 text-sm font-medium border transition-colors min-h-[48px] flex flex-col items-center justify-center gap-0.5",
               size.available 
                 ? "border-neutral-200 hover:border-black cursor-pointer bg-white text-black" 
                 : "border-neutral-100 bg-neutral-50 text-neutral-400 cursor-not-allowed line-through",
               selectedSize === size.id && "bg-black text-white border-black hover:border-black"
             )}
           >
-            UK {size.label}
+            <span>UK {size.label}</span>
+            {size.available && hasVaryingPrices && size.price && (
+              <span className={twMerge("text-[9px] font-semibold", selectedSize === size.id ? "text-neutral-300" : "text-neutral-400")}>
+                ₹{size.price.toLocaleString('en-IN')}
+              </span>
+            )}
             {size.available && size.stock && size.stock <= 3 && (
               <span className="absolute -top-2 -right-2 bg-teal-600 text-white text-[10px] px-1.5 rounded-sm">
                 Few Left

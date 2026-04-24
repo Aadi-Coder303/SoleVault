@@ -3,7 +3,7 @@ import prisma from '@/lib/prisma';
 
 export async function POST(req: Request) {
   try {
-    const { fullName, email, phone, address, amount, items, codRequest } = await req.json();
+    const { fullName, email, phone, address, amount, items, codRequest, couponCode, discount } = await req.json();
 
     const txnid = `COD-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
@@ -21,8 +21,18 @@ export async function POST(req: Request) {
         customerPhone: phone,
         address,
         items: items || [],
+        couponCode: couponCode || null,
+        discount: parseFloat(discount) || 0,
       },
     });
+
+    // Increment coupon usage if a coupon was applied
+    if (couponCode) {
+      await prisma.coupon.updateMany({
+        where: { code: couponCode.toUpperCase().trim() },
+        data: { usedCount: { increment: 1 } },
+      });
+    }
 
     return NextResponse.json({ success: true, txnid });
   } catch (error) {

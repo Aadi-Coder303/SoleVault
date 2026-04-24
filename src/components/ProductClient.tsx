@@ -18,10 +18,20 @@ interface ProductData {
   description: string;
   imageUrl: string | null;
   sizes: any;
+  colorName?: string | null;
+  parentId?: string | null;
 }
 
-export default function ProductClient({ product }: { product: ProductData }) {
+interface ColorVariant {
+  id: string;
+  name: string;
+  colorName: string | null;
+  imageUrl: string | null;
+}
+
+export default function ProductClient({ product, colorVariants = [] }: { product: ProductData; colorVariants?: ColorVariant[] }) {
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  const [displayPrice, setDisplayPrice] = useState(product.price);
   const { addItem } = useCartStore();
   const { toggleItem, hasItem } = useWishlistStore();
   const [mounted, setMounted] = useState(false);
@@ -31,29 +41,49 @@ export default function ProductClient({ product }: { product: ProductData }) {
     setMounted(true);
   }, []);
 
-  // Calculate total stock
-  const sizesMap = (product.sizes as Record<string, number>) || {};
-  const totalStock = Object.values(sizesMap).reduce((a, b) => a + b, 0);
+  // Handle both size formats: plain number or { stock, price }
+  const sizesMap = (product.sizes as Record<string, number | { stock: number; price: number }>) || {};
+  const totalStock = Object.values(sizesMap).reduce((a: number, b) => {
+    return a + (typeof b === 'object' ? b.stock : (b as number));
+  }, 0);
   const isLowStock = totalStock > 0 && totalStock <= 5;
 
-  const formattedSizes = Object.entries(sizesMap).map(([sizeLabel, stock]) => ({
-    id: sizeLabel,
-    label: sizeLabel.replace('UK ', ''),
-    available: stock > 0,
-    stock: stock,
-  }));
+  const formattedSizes = Object.entries(sizesMap).map(([sizeLabel, val]) => {
+    const stock = typeof val === 'object' ? val.stock : (val as number);
+    const price = typeof val === 'object' ? val.price : undefined;
+    return {
+      id: sizeLabel,
+      label: sizeLabel.replace('UK ', ''),
+      available: stock > 0,
+      stock,
+      price,
+    };
+  });
   formattedSizes.sort((a, b) => parseFloat(a.label) - parseFloat(b.label));
 
   const imageUrls = product.imageUrl ? product.imageUrl.split(',') : [];
   const galleryImages = [...imageUrls, '', '', ''].slice(0, 4);
 
+  const handleSizeSelect = (sizeId: string, price?: number) => {
+    setSelectedSize(sizeId);
+    setDisplayPrice(price || product.price);
+  };
+
+  const getCurrentPrice = () => {
+    if (!selectedSize) return product.price;
+    const val = sizesMap[selectedSize];
+    if (typeof val === 'object' && val.price) return val.price;
+    return product.price;
+  };
+
   const handleAddToCart = () => {
     if (!selectedSize) return toast.error('Please select a size first.');
+    const price = getCurrentPrice();
     addItem({
       id: `${product.id}-${selectedSize}`,
       productId: product.id,
       name: product.name,
-      price: product.price,
+      price,
       size: selectedSize,
       imageUrl: product.imageUrl || '',
     });
@@ -62,11 +92,12 @@ export default function ProductClient({ product }: { product: ProductData }) {
 
   const handleBuyNow = () => {
     if (!selectedSize) return toast.error('Please select a size first.');
+    const price = getCurrentPrice();
     addItem({
       id: `${product.id}-${selectedSize}`,
       productId: product.id,
       name: product.name,
-      price: product.price,
+      price,
       size: selectedSize,
       imageUrl: product.imageUrl || '',
     });
@@ -84,12 +115,40 @@ export default function ProductClient({ product }: { product: ProductData }) {
       <div className="lg:w-[40%] flex flex-col">
         <p className="text-xs text-[#E63946] font-bold uppercase tracking-[0.3em] mb-1">{product.brand}</p>
         <h1 className="text-2xl lg:text-3xl font-black mb-3 leading-tight">{product.name}</h1>
+        {product.colorName && (
+          <p className="text-xs text-neutral-500 font-semibold uppercase tracking-wide mb-2">{product.colorName}</p>
+        )}
 
         {/* Price row */}
         <div className="flex items-center gap-3 mb-4">
-          <span className="text-2xl font-black">{formatCurrency(product.price)}</span>
+          <span className="text-2xl font-black">{formatCurrency(displayPrice)}</span>
           <span className="text-xs bg-green-100 text-green-700 font-bold px-2 py-1 rounded-sm uppercase tracking-wide">Free Shipping</span>
         </div>
+
+        {/* Color Variants */}
+        {colorVariants.length > 0 && (
+          <div className="mb-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500 mb-2">Available Colors</p>
+            <div className="flex gap-2 flex-wrap">
+              {colorVariants.map(v => {
+                const isActive = v.id === product.id;
+                const thumb = v.imageUrl ? v.imageUrl.split(',')[0].trim() : '';
+                return (
+                  <button
+                    key={v.id}
+                    onClick={() => { if (!isActive) router.push(`/products/${v.id}`); }}
+                    className={`flex items-center gap-2 border px-3 py-2 text-xs font-semibold transition-all ${
+                      isActive ? 'border-black bg-neutral-50' : 'border-neutral-200 hover:border-black'
+                    }`}
+                  >
+                    {thumb && <img src={thumb} alt={v.colorName || v.name} className="w-8 h-8 object-cover rounded-sm" />}
+                    <span>{v.colorName || 'Default'}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Stock urgency */}
         {totalStock > 0 && (
@@ -101,7 +160,7 @@ export default function ProductClient({ product }: { product: ProductData }) {
 
         {/* Size Selection */}
         <div className="mb-6">
-          <SizeSelector sizes={formattedSizes} onSelect={setSelectedSize} />
+          <SizeSelector sizes={formattedSizes} onSelect={handleSizeSelect} />
         </div>
 
         {/* CTAs */}

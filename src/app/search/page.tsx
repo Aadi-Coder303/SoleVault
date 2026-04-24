@@ -49,7 +49,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
               name={product.name}
               price={product.price}
               imageUrl={product.imageUrl || ''}
-              sizes={product.sizes as Record<string, number>}
+              sizes={product.sizes as Record<string, number | { stock: number; price: number }>}
             />
           ))}
         </div>

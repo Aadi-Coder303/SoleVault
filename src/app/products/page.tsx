@@ -61,7 +61,7 @@ export default async function ProductsPage({
               name={p.name} 
               price={p.price} 
               imageUrl={p.imageUrl || ''} 
-              sizes={p.sizes as Record<string, number>}
+              sizes={p.sizes as Record<string, number | { stock: number; price: number }>}
             />
           ))}
           {products.length === 0 && (

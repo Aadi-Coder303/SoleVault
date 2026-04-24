@@ -22,26 +22,30 @@ model Product {
   imageUrl    String?
   category    String   @default("Men")
   sizes       Json     @default("{}")
+  colorName   String?                        // e.g. "Triple Black", "University Blue"
+  parentId    String?                        // links to parent product for color grouping
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   orders      Order[]
 }
 
 model Order {
-  id          String   @id @default(uuid())
-  txnid       String   @unique
-  status      String   @default("pending") // pending | paid | failed | cod_pending
-  amount      Float
-  customerName String
+  id            String   @id @default(uuid())
+  txnid         String   @unique
+  status        String   @default("pending") // pending | paid | failed | cod_pending
+  amount        Float
+  customerName  String
   customerEmail String
   customerPhone String
-  address     String
-  items       Json     // [{ productId, name, size, price, qty }]
-  payuResponse Json?   // raw PayU callback payload
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  product     Product? @relation(fields: [productId], references: [id])
-  productId   String?
+  address       String
+  items         Json     // [{ productId, name, size, price, qty }]
+  couponCode    String?  // coupon code used, if any
+  discount      Float    @default(0) // discount amount applied
+  payuResponse  Json?    // raw PayU callback payload
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  product       Product? @relation(fields: [productId], references: [id])
+  productId     String?
 }
 
 model UserData {
@@ -51,4 +55,18 @@ model UserData {
   wishlist  Json     @default("[]")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Coupon {
+  id            String    @id @default(uuid())
+  code          String    @unique
+  discountType  String    @default("percent") // "percent" | "flat"
+  discountValue Float                         // 10 = 10% or ₹10
+  minOrderValue Float     @default(0)
+  maxUses       Int       @default(0)         // 0 = unlimited
+  usedCount     Int       @default(0)
+  isActive      Boolean   @default(true)
+  expiresAt     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 }

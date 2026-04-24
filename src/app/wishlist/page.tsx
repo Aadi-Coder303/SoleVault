@@ -13,7 +13,7 @@ interface ProductData {
   price: number;
   description: string;
   imageUrl: string | null;
-  sizes: Record<string, number>;
+  sizes: Record<string, number | { stock: number; price: number }>;
 }
 
 export default function WishlistPage() {

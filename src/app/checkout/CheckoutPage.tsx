@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Loader2, ShieldCheck, Truck, CreditCard, MapPin, AlertTriangle } from 'lucide-react';
+import { Loader2, ShieldCheck, Truck, CreditCard, MapPin, AlertTriangle, Tag, X } from 'lucide-react';
 import { useCartStore } from '@/store/useCartStore';
 import { formatCurrency } from '@/lib/formatCurrency';
 import Link from 'next/link';
@@ -33,6 +33,17 @@ export default function CheckoutPage() {
   const [mounted, setMounted] = useState(false);
   const [codRequested, setCodRequested] = useState(false);
   const [isRequestingCod, setIsRequestingCod] = useState(false);
+  const [phoneError, setPhoneError] = useState('');
+
+  // Auth gate state
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // Coupon state
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountType: string; discountValue: number; discountAmount: number } | null>(null);
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+  const [couponError, setCouponError] = useState('');
 
   // Stock validation state
   const [outOfStockItems, setOutOfStockItems] = useState<string[]>([]);
@@ -71,7 +82,8 @@ export default function CheckoutPage() {
           continue;
         }
         const sizes = product.sizes || {};
-        const stock = sizes[item.size] ?? 0;
+        const sizeVal = sizes[item.size];
+        const stock = typeof sizeVal === 'object' ? sizeVal.stock : (sizeVal ?? 0);
         if (stock <= 0) {
           oosIds.push(item.id);
         }
@@ -94,18 +106,24 @@ export default function CheckoutPage() {
       toast.error('Payment failed or was cancelled. Please try again.');
     }
 
-    // Auto-fill name & email from auth session
+    // Auth gate: check login, redirect if not logged in
     const supabase = createClient();
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        const meta = session.user.user_metadata;
-        if (meta?.full_name && !fullName) setFullName(meta.full_name);
-        else if (meta?.name && !fullName) setFullName(meta.name);
-        if (session.user.email && !email) setEmail(session.user.email);
-        if (session.user.phone) {
-          const digits = session.user.phone.replace(/^\+91/, '');
-          if (!phone && digits.length === 10) setPhone(digits);
-        }
+      if (!session?.user) {
+        toast.error('Please log in to continue checkout.');
+        router.push('/login?redirect=/checkout');
+        return;
+      }
+      setIsLoggedIn(true);
+      setIsAuthChecking(false);
+
+      const meta = session.user.user_metadata;
+      if (meta?.full_name && !fullName) setFullName(meta.full_name);
+      else if (meta?.name && !fullName) setFullName(meta.name);
+      if (session.user.email && !email) setEmail(session.user.email);
+      if (session.user.phone) {
+        const digits = session.user.phone.replace(/^\+91/, '');
+        if (!phone && digits.length === 10) setPhone(digits);
       }
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -127,11 +145,53 @@ export default function CheckoutPage() {
   // Filter out out-of-stock items for pricing
   const validItems = items.filter(i => !outOfStockItems.includes(i.id));
   const subtotal = validItems.reduce((sum, item) => sum + item.price, 0);
+  const discountAmount = appliedCoupon?.discountAmount || 0;
+  const total = Math.max(0, subtotal - discountAmount);
+
+  // Phone validation helper
+  const validatePhone = (val: string): string => {
+    if (val.length === 0) return '';
+    if (val.length !== 10) return 'Phone number must be 10 digits.';
+    if (!/^[6-9]/.test(val)) return 'Invalid Indian mobile number (must start with 6-9).';
+    return '';
+  };
+
+  // Apply coupon handler
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) { setCouponError('Please enter a coupon code.'); return; }
+    setIsApplyingCoupon(true);
+    setCouponError('');
+    try {
+      const res = await fetch('/api/coupons/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: couponCode.trim(), cartTotal: subtotal }),
+      });
+      const data = await res.json();
+      if (data.valid) {
+        setAppliedCoupon({ code: data.code, discountType: data.discountType, discountValue: data.discountValue, discountAmount: data.discountAmount });
+        toast.success(`Coupon applied! You save ${formatCurrency(data.discountAmount)}.`);
+        setCouponError('');
+      } else {
+        setCouponError(data.error || 'Invalid coupon.');
+        setAppliedCoupon(null);
+      }
+    } catch { setCouponError('Failed to validate coupon.'); }
+    finally { setIsApplyingCoupon(false); }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode('');
+    setCouponError('');
+    toast('Coupon removed.', { icon: '🗑️' });
+  };
 
   // Fetch GoKwik saved addresses when phone has 10 digits
   const handlePhoneChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value.replace(/\D/g, '').slice(0, 10);
     setPhone(val);
+    setPhoneError(validatePhone(val));
 
     if (val.length === 10 && !addressFetched) {
       setIsFetchingAddresses(true);
@@ -204,6 +264,9 @@ export default function CheckoutPage() {
     if (!fullName || !phone || !email || !address1 || !pincode || !city || !stateName) {
       toast.error('Please fill in all required fields.'); return;
     }
+    // Validate phone
+    const pErr = validatePhone(phone);
+    if (pErr) { setPhoneError(pErr); toast.error(pErr); return; }
     if (validItems.length === 0) { toast.error('Your bag is empty or all items are out of stock.'); return; }
     if (outOfStockItems.length > 0) {
       toast.error('Please remove out-of-stock items before placing your order.'); return;
@@ -220,14 +283,15 @@ export default function CheckoutPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          amount: subtotal.toFixed(2),
+          amount: total.toFixed(2),
           productinfo,
           firstname: fullName.split(' ')[0],
           email,
           phone: fullPhone,
           address: fullAddress,
-          // Pass full items so success route can decrement stock
           items: validItems.map(i => ({ productId: i.productId, name: i.name, size: i.size, price: i.price, qty: 1 })),
+          couponCode: appliedCoupon?.code || null,
+          discount: discountAmount.toString(),
         }),
       });
       const data = await res.json();
@@ -239,7 +303,12 @@ export default function CheckoutPage() {
     }
   };
 
-  if (!mounted) return null;
+  if (!mounted || isAuthChecking) return (
+    <div className="min-h-screen flex items-center justify-center">
+      <Loader2 size={24} className="animate-spin text-neutral-400" />
+    </div>
+  );
+  if (!isLoggedIn) return null;
 
   return (
     <main className="container mx-auto px-4 py-8 max-w-5xl">
@@ -312,9 +381,10 @@ export default function CheckoutPage() {
                     <label className="block text-sm font-semibold mb-2">Phone *</label>
                     <div className="flex">
                       <span className="inline-flex items-center px-3 bg-neutral-100 border border-r-0 border-neutral-300 text-sm font-semibold text-neutral-600 select-none">+91</span>
-                      <input required type="tel" maxLength={10} value={phone} onChange={handlePhoneChange} className="w-full border border-neutral-300 p-3 focus:outline-none focus:border-black" placeholder="9876543210" />
+                      <input required type="tel" maxLength={10} value={phone} onChange={handlePhoneChange} className={`w-full border p-3 focus:outline-none ${phoneError ? 'border-red-400 focus:border-red-500' : 'border-neutral-300 focus:border-black'}`} placeholder="9876543210" />
                     </div>
-                  </div>
+                    </div>
+                    {phoneError && <p className="text-xs text-[#E63946] mt-1 font-medium">{phoneError}</p>}
                   <div><label className="block text-sm font-semibold mb-2">Email *</label><input required type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full border border-neutral-300 p-3 focus:outline-none focus:border-black" placeholder="you@email.com" /></div>
                   <div className="md:col-span-2"><label className="block text-sm font-semibold mb-2">Address Line 1 *</label><input required type="text" value={address1} onChange={e => setAddress1(e.target.value)} className="w-full border border-neutral-300 p-3 focus:outline-none focus:border-black" placeholder="Flat / House No. / Building" /></div>
                   <div className="md:col-span-2"><label className="block text-sm font-semibold mb-2">Address Line 2</label><input type="text" value={address2} onChange={e => setAddress2(e.target.value)} className="w-full border border-neutral-300 p-3 focus:outline-none focus:border-black" placeholder="Street, Sector, Area" /></div>
@@ -346,6 +416,8 @@ export default function CheckoutPage() {
                         if (!fullName || !phone || !email || !address1 || !pincode || !city || !stateName) {
                           toast.error('Please fill shipping details first.'); return;
                         }
+                        const pErr2 = validatePhone(phone);
+                        if (pErr2) { setPhoneError(pErr2); toast.error(pErr2); return; }
                         if (validItems.length === 0) { toast.error('Your bag is empty.'); return; }
                         setIsRequestingCod(true);
                         try {
@@ -355,8 +427,10 @@ export default function CheckoutPage() {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
-                              fullName, email, phone: fullPhone, address: fullAddress, amount: subtotal,
+                              fullName, email, phone: fullPhone, address: fullAddress, amount: total,
                               items: validItems.map(i => ({ productId: i.productId, name: i.name, size: i.size, price: i.price, qty: 1 })),
+                              couponCode: appliedCoupon?.code || null,
+                              discount: discountAmount.toString(),
                               codRequest: true,
                             }),
                           });
@@ -418,16 +492,43 @@ export default function CheckoutPage() {
                     );
                   })}
                 </div>
+                {/* Coupon Code Input */}
+                <div className="mb-6 border-b border-neutral-200 pb-6">
+                  <p className="text-sm font-bold uppercase tracking-wide mb-3 flex items-center gap-1.5"><Tag size={14} /> Coupon Code</p>
+                  {appliedCoupon ? (
+                    <div className="flex items-center justify-between bg-green-50 border border-green-200 p-3">
+                      <div>
+                        <span className="font-bold text-green-800 text-sm">{appliedCoupon.code}</span>
+                        <span className="text-xs text-green-600 ml-2">−{formatCurrency(appliedCoupon.discountAmount)} off</span>
+                      </div>
+                      <button type="button" onClick={handleRemoveCoupon} className="text-neutral-400 hover:text-red-500 transition-colors"><X size={16} /></button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex gap-2">
+                        <input type="text" value={couponCode} onChange={e => { setCouponCode(e.target.value.toUpperCase()); setCouponError(''); }} placeholder="Enter code" className="flex-1 border border-neutral-300 p-2.5 text-sm uppercase tracking-wider focus:outline-none focus:border-black" />
+                        <button type="button" onClick={handleApplyCoupon} disabled={isApplyingCoupon} className="bg-black text-white px-4 text-xs font-bold uppercase tracking-wider hover:bg-[#E63946] transition-colors disabled:opacity-50 flex items-center gap-1">
+                          {isApplyingCoupon ? <Loader2 size={14} className="animate-spin" /> : 'Apply'}
+                        </button>
+                      </div>
+                      {couponError && <p className="text-xs text-[#E63946] mt-1.5 font-medium">{couponError}</p>}
+                    </>
+                  )}
+                </div>
+
                 <div className="space-y-3 mb-6 text-sm">
                   <div className="flex justify-between"><span className="text-neutral-600">Subtotal</span><span className="font-semibold">{formatCurrency(subtotal)}</span></div>
+                  {appliedCoupon && (
+                    <div className="flex justify-between text-green-600"><span>Discount ({appliedCoupon.code})</span><span className="font-semibold">−{formatCurrency(discountAmount)}</span></div>
+                  )}
                   <div className="flex justify-between"><span className="text-neutral-600">Shipping</span><span className="font-semibold text-green-600">Free</span></div>
                 </div>
                 <div className="border-t border-neutral-200 pt-4 flex justify-between items-center mb-6">
                   <span className="font-bold uppercase tracking-wide">Total</span>
-                  <span className="text-xl font-bold">{formatCurrency(subtotal)}</span>
+                  <span className="text-xl font-bold">{formatCurrency(total)}</span>
                 </div>
-                <button type="submit" disabled={isInitiatingPayment} className="w-full bg-black text-white py-4 font-bold uppercase tracking-wider hover:bg-[#E63946] transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
-                  {isInitiatingPayment ? <><Loader2 size={18} className="animate-spin" /> Redirecting…</> : 'Pay Now →'}
+                <button type="submit" disabled={isInitiatingPayment || !!phoneError} className="w-full bg-black text-white py-4 font-bold uppercase tracking-wider hover:bg-[#E63946] transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
+                  {isInitiatingPayment ? <><Loader2 size={18} className="animate-spin" /> Redirecting…</> : `Pay ${formatCurrency(total)} →`}
                 </button>
                 <p className="text-[10px] text-neutral-400 text-center mt-3">By placing your order you agree to our Terms &amp; Privacy Policy</p>
               </div>
