@@ -121,9 +121,16 @@ export default function CheckoutPage() {
       if (meta?.full_name && !fullName) setFullName(meta.full_name);
       else if (meta?.name && !fullName) setFullName(meta.name);
       if (session.user.email && !email) setEmail(session.user.email);
-      if (session.user.phone) {
-        const digits = session.user.phone.replace(/^\+91/, '');
-        if (!phone && digits.length === 10) setPhone(digits);
+      
+      // Auto-fill phone: check multiple sources
+      const rawPhone = session.user.phone 
+        || meta?.phone 
+        || meta?.phone_number 
+        || '';
+      if (rawPhone) {
+        const digits = rawPhone.replace(/\D/g, ''); // strip all non-digits
+        const tenDigits = digits.length > 10 ? digits.slice(-10) : digits; // take last 10
+        if (tenDigits.length === 10) setPhone(tenDigits);
       }
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
