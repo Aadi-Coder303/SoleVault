@@ -26,13 +26,13 @@ export default function WishlistPage() {
   useEffect(() => {
     setMounted(true);
     const quotes = [
-      "Zero favorites? Your taste can't be that bad.",
-      "Wow, nothing? Stop playing around.",
-      "Your wishlist is looking a little sad.",
-      "No favorites yet. We're judging you slightly.",
-      "Empty wishlist? Let's fix that.",
-      "Seriously? Not a single pair caught your eye? We know your taste is better than this.",
-      "Stop playing around and go favorite some heat."
+      "Your taste can't be that bad.",
+      "Stop playing around and add some heat.",
+      "It's looking a little sad in here.",
+      "We're judging you slightly.",
+      "Let's fix that.",
+      "Not a single pair caught your eye? We know your taste is better than this.",
+      "Go favorite some heat."
     ];
     setEmptyText(quotes[Math.floor(Math.random() * quotes.length)]);
   }, []);
@@ -81,7 +81,7 @@ export default function WishlistPage() {
       ) : (
         <div className="flex flex-col items-center justify-center py-24 text-center bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
           <Heart size={48} className="text-neutral-300 mb-4" />
-          <h2 className="text-xl font-bold uppercase tracking-wide mb-2">Wow, zero favorites?</h2>
+          <h2 className="text-xl font-bold uppercase tracking-wide mb-2">Zero Favorites?</h2>
           <p className="text-neutral-500 mb-8 max-w-md">
             {emptyText}
           </p>
