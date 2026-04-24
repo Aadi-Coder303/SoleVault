@@ -30,7 +30,9 @@ export default function WishlistPage() {
       "Wow, nothing? Stop playing around.",
       "Your wishlist is looking a little sad.",
       "No favorites yet. We're judging you slightly.",
-      "Empty wishlist? Let's fix that."
+      "Empty wishlist? Let's fix that.",
+      "Seriously? Not a single pair caught your eye? We know your taste is better than this.",
+      "Stop playing around and go favorite some heat."
     ];
     setEmptyText(quotes[Math.floor(Math.random() * quotes.length)]);
   }, []);

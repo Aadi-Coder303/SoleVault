@@ -17,7 +17,8 @@ export default function CartPage() {
       "Wow, such empty. Go buy some sneakers.",
       "0 items? We know you have better taste than that.",
       "Your cart is as empty as my ex's heart.",
-      "Nothing here. Are you even trying to look fly?"
+      "Nothing here. Are you even trying to look fly?",
+      "Your bag is so empty we can hear an echo. Your feet deserve better than this—go secure some heat."
     ];
     setEmptyText(quotes[Math.floor(Math.random() * quotes.length)]);
   }, []);
