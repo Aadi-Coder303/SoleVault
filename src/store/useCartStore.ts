@@ -40,13 +40,35 @@ export const useCartStore = create<CartStore>()(
           const res = await fetch(`/api/user/sync?userId=${userId}`);
           if (res.ok) {
             const data = await res.json();
+            const localItems = get().items;
+            
             if (Array.isArray(data.cart) && data.cart.length > 0) {
-              set({ items: data.cart, _userId: userId });
+              if (localItems.length > 0) {
+                // Merge DB cart and local cart
+                const mergedMap = new Map();
+                // Add DB items first
+                data.cart.forEach((item: CartItem) => mergedMap.set(item.id, item));
+                // Add/Merge local items
+                localItems.forEach((item) => {
+                  if (mergedMap.has(item.id)) {
+                    const existing = mergedMap.get(item.id);
+                    mergedMap.set(item.id, { ...existing, quantity: existing.quantity + item.quantity });
+                  } else {
+                    mergedMap.set(item.id, item);
+                  }
+                });
+                
+                const mergedCart = Array.from(mergedMap.values());
+                set({ items: mergedCart, _userId: userId });
+                get().syncToServer();
+              } else {
+                // No local items, just use DB items
+                set({ items: data.cart, _userId: userId });
+              }
             } else {
               set({ _userId: userId });
               // Push local cart to server if exists
-              const local = get().items;
-              if (local.length > 0) {
+              if (localItems.length > 0) {
                 get().syncToServer();
               }
             }

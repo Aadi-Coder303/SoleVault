@@ -24,7 +24,7 @@ export default function AuthSync() {
     });
 
     // Sync on auth state changes (login/logout)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user?.id) {
         setCartUserId(session.user.id);
         setWishlistUserId(session.user.id);
@@ -33,6 +33,10 @@ export default function AuthSync() {
       } else {
         setCartUserId(null);
         setWishlistUserId(null);
+      }
+
+      if (event === 'SIGNED_OUT') {
+        useCartStore.getState().clearCart();
       }
     });
 
