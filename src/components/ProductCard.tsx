@@ -50,11 +50,13 @@ export default function ProductCard({ id, name, price, originalPrice, imageUrl, 
 
   const handleQuickAddClick = (e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setShowSizes(true);
   };
 
   const handleSizeSelect = (e: React.MouseEvent, size: string) => {
     e.preventDefault();
+    e.stopPropagation();
     const sizeVal = sizes?.[size];
     const sizePrice = sizeVal && typeof sizeVal === 'object' ? sizeVal.price : price;
     addItem({
@@ -71,6 +73,7 @@ export default function ProductCard({ id, name, price, originalPrice, imageUrl, 
 
   const handleWishlist = (e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     toggleItem(id);
   };
 
@@ -142,7 +145,7 @@ export default function ProductCard({ id, name, price, originalPrice, imageUrl, 
                 <span className="text-xs font-bold text-neutral-500 py-1">OUT OF STOCK</span>
               )}
               <button 
-                onClick={(e) => { e.preventDefault(); setShowSizes(false); }}
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowSizes(false); }}
                 className="px-2 py-1 text-xs text-neutral-400 hover:text-black ml-1 transition-colors"
               >
                 ✕
