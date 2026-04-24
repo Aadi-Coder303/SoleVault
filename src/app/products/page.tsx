@@ -4,7 +4,7 @@ import ProductSort from '@/components/ProductSort';
 import prisma from '@/lib/prisma';
 import { Suspense } from 'react';
 
-export const revalidate = 0; // Disable caching for MVP
+export const revalidate = 60; // Cache for 60 seconds for fast performance
 
 export default async function ProductsPage({ 
   searchParams 

@@ -2,7 +2,7 @@ import ProductCard from '@/components/ProductCard';
 import { Search as SearchIcon } from 'lucide-react';
 import prisma from '@/lib/prisma';
 
-export const revalidate = 0;
+export const revalidate = 60;
 
 export default async function SearchPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const resolvedParams = await searchParams;

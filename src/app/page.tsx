@@ -4,7 +4,7 @@ import HeroSection from '@/components/HeroSection';
 import BrandTicker from '@/components/BrandTicker';
 import prisma from '@/lib/prisma';
 
-export const revalidate = 0;
+export const revalidate = 60; // Cache page for 60 seconds for much faster load times
 
 export default async function Home() {
   const products = await prisma.product.findMany({
