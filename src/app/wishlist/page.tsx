@@ -70,9 +70,9 @@ export default function WishlistPage() {
       ) : (
         <div className="flex flex-col items-center justify-center py-24 text-center bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
           <Heart size={48} className="text-neutral-300 mb-4" />
-          <h2 className="text-xl font-bold uppercase tracking-wide mb-2">Nothing to see here</h2>
+          <h2 className="text-xl font-bold uppercase tracking-wide mb-2">Wow, zero favorites?</h2>
           <p className="text-neutral-500 mb-8 max-w-md">
-            You haven&apos;t added any sneakers to your favorites yet. Start browsing to find your perfect pair!
+            Seriously? Not a single pair caught your eye? We know your taste is better than this. Stop playing around and go favorite some heat.
           </p>
           <Link href="/products?category=all" className="bg-black text-white px-8 py-4 font-bold uppercase tracking-wider hover:bg-[#E63946] transition-colors">
             Shop All Sneakers

@@ -21,7 +21,7 @@ export default function CartPage() {
       
       {items.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-neutral-500 mb-6">Your bag is currently empty.</p>
+          <p className="text-neutral-500 mb-6 font-medium">Your bag is so empty we can hear an echo. Your feet deserve better than this—go secure some heat.</p>
           <Link href="/products" className="inline-block bg-black text-white px-8 py-3 font-bold uppercase tracking-wider hover:bg-[#E63946] transition-colors">
             Continue Shopping
           </Link>
