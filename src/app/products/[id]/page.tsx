@@ -17,14 +17,20 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   // Fetch color variants: find all products in the same color group
   let colorVariants: { id: string; name: string; colorName: string | null; imageUrl: string | null }[] = [];
   
-  if (product.parentId || product.colorName) {
+  // Check if this product is part of a group (has parentId or colorName)
+  // OR if other products reference this product as their parent
+  const hasChildren = await prisma.product.count({ where: { parentId: product.id } });
+  
+  if (product.parentId || product.colorName || hasChildren > 0) {
+    // If this product has a parentId, the group root is that parent.
+    // Otherwise, this product IS the group root.
     const groupId = product.parentId || product.id;
     
     const variants = await prisma.product.findMany({
       where: {
         OR: [
-          { id: groupId },
-          { parentId: groupId },
+          { id: groupId },           // the parent itself
+          { parentId: groupId },     // all children of the parent
         ],
       },
       select: { id: true, name: true, colorName: true, imageUrl: true },
