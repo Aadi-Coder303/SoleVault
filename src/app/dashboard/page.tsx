@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Loader2, Plus, Minus, Edit2, RefreshCw, Trash2, ToggleLeft, ToggleRight, Tag, Eye, ShoppingCart } from 'lucide-react';
+import { Loader2, Plus, Minus, Edit2, RefreshCw, Trash2, ToggleLeft, ToggleRight, Tag, Eye, ShoppingCart, Copy, ClipboardCheck } from 'lucide-react';
 import { twMerge } from 'tailwind-merge';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -296,6 +296,19 @@ export default function DashboardPage() {
                     <p className="font-semibold text-sm">{order.customerName}</p>
                     <p className="text-xs text-neutral-500">{order.customerPhone}</p>
                     <p className="text-[10px] text-neutral-400 mt-0.5 line-clamp-2">{order.address}</p>
+                    <button
+                      onClick={() => {
+                        const itemsList = items.map((it: any) => `${it.name} (${it.size})`).join('\n');
+                        const text = `Name: ${order.customerName}\nPhone: ${order.customerPhone}\nAddress: ${order.address}\n\nItems:\n${itemsList}\n\nAmount: ₹${order.amount}\nOrder ID: ${order.txnid}`;
+                        navigator.clipboard.writeText(text).then(() => {
+                          toast.success('Order info copied!');
+                        });
+                      }}
+                      className="mt-1.5 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-neutral-400 hover:text-black transition-colors"
+                      title="Copy all delivery info"
+                    >
+                      <Copy size={11} /> Copy Info
+                    </button>
                   </td>
                   <td className="py-3 px-4 text-sm">
                     {items.map((it: any, i: number) => (
