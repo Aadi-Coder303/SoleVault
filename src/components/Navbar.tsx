@@ -112,11 +112,11 @@ export default function Navbar() {
 
         {/* Icons */}
         <div className="flex items-center gap-4 sm:gap-5">
-          {/* Theme toggle */}
+          {/* Theme toggle — desktop only */}
           <button
             onClick={toggleTheme}
             aria-label="Toggle dark mode"
-            className="hover:text-[#E63946] transition-colors mt-0.5"
+            className="hidden md:block hover:text-[#E63946] transition-colors mt-0.5"
           >
             {mounted && theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
           </button>
@@ -158,7 +158,7 @@ export default function Navbar() {
             )}
           </Link>
           {/* Desktop auth */}
-          <div className="hidden sm:block">
+          <div className="hidden md:block">
             {mounted && !user && (
               <Link href="/login" className="text-sm font-bold uppercase tracking-wide hover:text-[#E63946]">
                 Log In
@@ -173,19 +173,6 @@ export default function Navbar() {
                   <LogOut size={20} />
                 </button>
               </div>
-            )}
-          </div>
-          {/* Mobile-only login icon */}
-          <div className="sm:hidden">
-            {mounted && !user && (
-              <Link href="/login" aria-label="Log In" className="hover:text-[#E63946] transition-colors">
-                <User size={20} />
-              </Link>
-            )}
-            {mounted && user && (
-              <button onClick={handleSignOut} className="hover:text-[#E63946] transition-colors" aria-label="Sign Out">
-                <LogOut size={20} />
-              </button>
             )}
           </div>
         </div>
@@ -207,6 +194,26 @@ export default function Navbar() {
                 <Link href="/orders" onClick={() => setMobileMenuOpen(false)} className="py-3 px-2 text-sm uppercase tracking-[0.08em] font-medium text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-all flex items-center gap-2">
                   <Package size={16} /> My Orders
                 </Link>
+              )}
+            </div>
+            {/* Theme & Auth — mobile only */}
+            <div className="border-t border-neutral-200 dark:border-neutral-800 mt-2 pt-2">
+              <button
+                onClick={() => { toggleTheme(); }}
+                className="w-full py-3 px-2 text-sm uppercase tracking-[0.08em] font-medium text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-all flex items-center gap-2"
+              >
+                {mounted && theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+                {mounted && theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+              </button>
+              {mounted && !user && (
+                <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="py-3 px-2 text-sm uppercase tracking-[0.08em] font-medium text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-all flex items-center gap-2">
+                  <User size={16} /> Log In
+                </Link>
+              )}
+              {mounted && user && (
+                <button onClick={handleSignOut} className="w-full py-3 px-2 text-sm uppercase tracking-[0.08em] font-medium text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-all flex items-center gap-2">
+                  <LogOut size={16} /> Sign Out
+                </button>
               )}
             </div>
           </nav>

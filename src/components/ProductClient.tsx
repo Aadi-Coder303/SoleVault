@@ -138,7 +138,7 @@ export default function ProductClient({ product, colorVariants = [] }: { product
                     key={v.id}
                     onClick={() => { if (!isActive) router.push(`/products/${v.id}`); }}
                     className={`flex items-center gap-2 border px-3 py-2 text-xs font-semibold transition-all ${
-                      isActive ? 'border-black bg-neutral-50' : 'border-neutral-200 hover:border-black'
+                      isActive ? 'border-black dark:border-white bg-neutral-50 dark:bg-neutral-800' : 'border-neutral-200 dark:border-neutral-700 hover:border-black dark:hover:border-white'
                     }`}
                   >
                     {thumb && <img src={thumb} alt={v.colorName || v.name} className="w-8 h-8 object-cover rounded-sm" />}
@@ -197,7 +197,7 @@ export default function ProductClient({ product, colorVariants = [] }: { product
             { icon: RefreshCcw, label: 'Easy Returns', sub: '7-day policy' },
           ].map(({ icon: Icon, label, sub }) => (
             <div key={label} className="flex flex-col items-center text-center gap-1 py-2">
-              <Icon size={20} className="text-black" strokeWidth={1.5} />
+              <Icon size={20} className="text-black dark:text-white" strokeWidth={1.5} />
               <span className="text-[10px] font-black uppercase tracking-wide leading-tight">{label}</span>
               <span className="text-[9px] text-neutral-400 uppercase">{sub}</span>
             </div>
@@ -207,7 +207,7 @@ export default function ProductClient({ product, colorVariants = [] }: { product
         {/* Description */}
         <div className="border-t border-neutral-200 dark:border-neutral-800 pt-5">
           <h3 className="font-bold mb-2 uppercase tracking-wide text-sm">Description</h3>
-          <p className="text-neutral-600 text-sm leading-relaxed whitespace-pre-wrap">
+          <p className="text-neutral-600 dark:text-neutral-400 text-sm leading-relaxed whitespace-pre-wrap">
             {product.description || 'No description available for this product.'}
           </p>
         </div>

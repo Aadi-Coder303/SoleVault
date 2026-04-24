@@ -22,7 +22,7 @@ function RecommendationRow({ title, subtitle, products }: { title: string; subti
   if (products.length === 0) return null;
 
   return (
-    <section className="py-12 border-t border-neutral-100">
+    <section className="py-12 border-t border-neutral-100 dark:border-neutral-800">
       <div className="container mx-auto px-4">
         <div className="mb-6">
           <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#E63946] mb-1">{subtitle}</p>
@@ -55,7 +55,7 @@ export default function ProductRecommendations({ moreBrand, alsoBought, youMayLi
   if (moreBrand.length === 0 && alsoBought.length === 0 && youMayLike.length === 0) return null;
 
   return (
-    <div className="bg-white">
+    <div className="bg-white dark:bg-neutral-950">
       <RecommendationRow
         title={`More From ${brandName}`}
         subtitle="Same Brand"

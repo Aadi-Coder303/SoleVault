@@ -362,7 +362,7 @@ export default function CheckoutPage() {
       {items.length === 0 ? (
         <div className="text-center py-20">
           <p className="text-neutral-500 mb-6">Your bag is empty.</p>
-          <Link href="/products" className="bg-black text-white px-8 py-3 font-bold uppercase tracking-wider hover:bg-[#E63946] transition-colors">Shop Now</Link>
+          <Link href="/products" className="bg-black dark:bg-white text-white dark:text-black px-8 py-3 font-bold uppercase tracking-wider hover:bg-[#E63946] dark:hover:bg-[#E63946] dark:hover:text-white transition-colors">Shop Now</Link>
         </div>
       ) : (
         <form onSubmit={handlePayNow}>
@@ -373,8 +373,8 @@ export default function CheckoutPage() {
 
                 {/* GoKwik Saved Addresses */}
                 {savedAddresses.length > 0 && (
-                  <div className="mb-6 border border-green-200 bg-green-50 p-4 rounded-sm">
-                    <p className="text-sm font-semibold text-green-800 mb-3 flex items-center gap-2">
+                  <div className="mb-6 border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30 p-4 rounded-sm">
+                    <p className="text-sm font-semibold text-green-800 dark:text-green-400 mb-3 flex items-center gap-2">
                       <MapPin size={14} /> Saved Address{savedAddresses.length > 1 ? 'es' : ''} Found
                     </p>
                     <div className="flex flex-col gap-2">
@@ -383,10 +383,10 @@ export default function CheckoutPage() {
                           key={idx}
                           type="button"
                           onClick={() => applySavedAddress(addr)}
-                          className="text-left bg-white border border-green-200 p-3 hover:border-green-500 hover:bg-green-50 transition-all text-sm rounded-sm"
+                          className="text-left bg-white dark:bg-neutral-900 border border-green-200 dark:border-green-800 p-3 hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-950/20 transition-all text-sm rounded-sm"
                         >
                           <p className="font-semibold">{addr.name || 'Saved Address'}</p>
-                          <p className="text-neutral-600 text-xs mt-0.5">
+                          <p className="text-neutral-600 dark:text-neutral-400 text-xs mt-0.5">
                             {[addr.address1, addr.address2, addr.city, addr.state, addr.pincode].filter(Boolean).join(', ')}
                           </p>
                         </button>
@@ -395,7 +395,7 @@ export default function CheckoutPage() {
                     <button
                       type="button"
                       onClick={() => setSavedAddresses([])}
-                      className="text-xs text-neutral-500 hover:text-black underline mt-2"
+                      className="text-xs text-neutral-500 hover:text-black dark:hover:text-white underline mt-2"
                     >
                       Enter address manually instead
                     </button>
@@ -409,7 +409,7 @@ export default function CheckoutPage() {
                 )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="md:col-span-2"><label className="block text-sm font-semibold mb-2">Full Name *</label><input required type="text" value={fullName} onChange={e => setFullName(e.target.value)} className="w-full border border-neutral-300 p-3 focus:outline-none focus:border-black" placeholder="Aadi Golecha" /></div>
+                  <div className="md:col-span-2"><label className="block text-sm font-semibold mb-2">Full Name *</label><input required type="text" value={fullName} onChange={e => setFullName(e.target.value)} className="w-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 dark:text-white p-3 focus:outline-none focus:border-black dark:focus:border-white" placeholder="Aadi Golecha" /></div>
                   <div>
                     <label className="block text-sm font-semibold mb-2">Phone *</label>
                     <div className="flex">
@@ -417,7 +417,7 @@ export default function CheckoutPage() {
                         <select
                           value={countryCode}
                           onChange={(e) => setCountryCode(e.target.value)}
-                          className="appearance-none h-full bg-neutral-100 border border-r-0 border-neutral-300 pl-3 pr-7 text-sm font-semibold text-neutral-700 focus:outline-none focus:border-black cursor-pointer"
+                          className="appearance-none h-full bg-neutral-100 dark:bg-neutral-800 border border-r-0 border-neutral-300 dark:border-neutral-700 pl-3 pr-7 text-sm font-semibold text-neutral-700 dark:text-neutral-300 focus:outline-none focus:border-black dark:focus:border-white cursor-pointer"
                         >
                           {COUNTRY_CODES.map(c => (
                             <option key={c.code} value={c.code}>{c.label}</option>
@@ -425,30 +425,33 @@ export default function CheckoutPage() {
                         </select>
                         <ChevronDown size={14} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
                       </div>
-                      <input required type="tel" maxLength={10} value={phone} onChange={handlePhoneChange} className={`w-full border p-3 focus:outline-none ${phoneError ? 'border-red-400 focus:border-red-500' : 'border-neutral-300 focus:border-black'}`} placeholder="9876543210" />
+                      <input required type="tel" maxLength={10} value={phone} onChange={handlePhoneChange} className={`w-full border p-3 focus:outline-none bg-white dark:bg-neutral-900 dark:text-white ${phoneError ? 'border-red-400 focus:border-red-500' : 'border-neutral-300 dark:border-neutral-700 focus:border-black dark:focus:border-white'}`} placeholder="9876543210" />
                     </div>
                     </div>
                     {phoneError && <p className="text-xs text-[#E63946] mt-1 font-medium">{phoneError}</p>}
-                  <div><label className="block text-sm font-semibold mb-2">Email *</label><input required type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full border border-neutral-300 p-3 focus:outline-none focus:border-black" placeholder="you@email.com" /></div>
-                  <div className="md:col-span-2"><label className="block text-sm font-semibold mb-2">Address Line 1 *</label><input required type="text" value={address1} onChange={e => setAddress1(e.target.value)} className="w-full border border-neutral-300 p-3 focus:outline-none focus:border-black" placeholder="Flat / House No. / Building" /></div>
-                  <div className="md:col-span-2"><label className="block text-sm font-semibold mb-2">Address Line 2</label><input type="text" value={address2} onChange={e => setAddress2(e.target.value)} className="w-full border border-neutral-300 p-3 focus:outline-none focus:border-black" placeholder="Street, Sector, Area" /></div>
+                  <div><label className="block text-sm font-semibold mb-2">Email *</label><input required type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 dark:text-white p-3 focus:outline-none focus:border-black dark:focus:border-white" placeholder="you@email.com" /></div>
+                  <div className="md:col-span-2"><label className="block text-sm font-semibold mb-2">Address Line 1 *</label><input required type="text" value={address1} onChange={e => setAddress1(e.target.value)} className="w-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 dark:text-white p-3 focus:outline-none focus:border-black dark:focus:border-white" placeholder="Flat / House No. / Building" /></div>
+                  <div className="md:col-span-2"><label className="block text-sm font-semibold mb-2">Address Line 2</label><input type="text" value={address2} onChange={e => setAddress2(e.target.value)} className="w-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 dark:text-white p-3 focus:outline-none focus:border-black dark:focus:border-white" placeholder="Street, Sector, Area" /></div>
                   <div className="relative">
                     <label className="block text-sm font-semibold mb-2">Pincode *</label>
-                    <input required type="text" maxLength={6} value={pincode} onChange={handlePincodeChange} className="w-full border border-neutral-300 p-3 focus:outline-none focus:border-black" placeholder="400001" />
+                    <input required type="text" maxLength={6} value={pincode} onChange={handlePincodeChange} className="w-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 dark:text-white p-3 focus:outline-none focus:border-black dark:focus:border-white" placeholder="400001" />
                     {isFetchingPin && <div className="absolute right-3 top-10 text-neutral-400"><Loader2 size={18} className="animate-spin" /></div>}
                   </div>
-                  <div><label className="block text-sm font-semibold mb-2">City</label><input type="text" readOnly value={city} className="w-full border border-neutral-300 p-3 focus:outline-none bg-neutral-50 text-neutral-700 cursor-not-allowed" placeholder="Auto-filled from pincode" /></div>
-                  <div className="md:col-span-2"><label className="block text-sm font-semibold mb-2">State</label><input type="text" readOnly value={stateName} className="w-full border border-neutral-300 p-3 focus:outline-none bg-neutral-50 text-neutral-700 cursor-not-allowed" placeholder="Auto-filled from pincode" /></div>
+                  <div><label className="block text-sm font-semibold mb-2">City</label><input type="text" readOnly value={city} className="w-full border border-neutral-300 dark:border-neutral-700 p-3 focus:outline-none bg-neutral-50 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-400 cursor-not-allowed" placeholder="Auto-filled from pincode" /></div>
+                  <div className="md:col-span-2"><label className="block text-sm font-semibold mb-2">State</label><input type="text" readOnly value={stateName} className="w-full border border-neutral-300 dark:border-neutral-700 p-3 focus:outline-none bg-neutral-50 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-400 cursor-not-allowed" placeholder="Auto-filled from pincode" /></div>
                 </div>
               </section>
 
               <section>
                 <h2 className="text-xl font-bold uppercase tracking-wide mb-6 flex items-center gap-2"><CreditCard size={18} /> Payment</h2>
                 <div className="flex flex-col gap-3">
-                  <div className="border border-black bg-neutral-50 p-4">
+                  <div className="border border-black dark:border-neutral-600 bg-neutral-50 dark:bg-neutral-900 p-4">
                     <p className="font-bold">Online Payment (Prepaid)</p>
-                    <p className="text-xs text-neutral-500 mt-0.5">UPI, Credit/Debit Cards, Netbanking, Wallets</p>
-                    <div className="flex gap-2 mt-2 flex-wrap">{['UPI', 'Visa', 'Mastercard', 'RuPay', 'Netbanking'].map(m => <span key={m} className="text-[10px] font-bold uppercase tracking-wide bg-neutral-200 px-2 py-0.5 rounded-sm">{m}</span>)}</div>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">UPI, Credit/Debit Cards, Netbanking, Wallets</p>
+                    <div className="flex gap-2 mt-2 flex-wrap">{['UPI', 'Visa', 'Mastercard', 'RuPay', 'Netbanking'].map(m => <span key={m} className="text-[10px] font-bold uppercase tracking-wide bg-neutral-200 dark:bg-neutral-700 dark:text-neutral-300 px-2 py-0.5 rounded-sm">{m}</span>)}</div>
+                    <button type="submit" disabled={isInitiatingPayment || !!phoneError} className="w-full mt-4 bg-[#E63946] text-white py-4 font-bold uppercase tracking-wider hover:bg-black dark:hover:bg-white dark:hover:text-black transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
+                      {isInitiatingPayment ? <><Loader2 size={18} className="animate-spin" /> Redirecting…</> : `Pay ${formatCurrency(total)} →`}
+                    </button>
                   </div>
 
                   {/* Request COD */}
@@ -483,7 +486,7 @@ export default function CheckoutPage() {
                         } catch { toast.error('Failed to submit request.'); }
                         finally { setIsRequestingCod(false); }
                       }}
-                      className="border border-neutral-300 p-4 text-left hover:border-neutral-400 transition-colors disabled:opacity-50"
+                      className="border border-neutral-300 dark:border-neutral-700 p-4 text-left hover:border-neutral-400 dark:hover:border-neutral-500 transition-colors disabled:opacity-50"
                     >
                       <p className="font-bold text-sm">Request Cash on Delivery</p>
                       <p className="text-xs text-neutral-500 mt-0.5">Subject to approval · We'll confirm via SMS/WhatsApp</p>
@@ -491,7 +494,7 @@ export default function CheckoutPage() {
                       {isRequestingCod && <p className="text-xs text-neutral-400 mt-1 flex items-center gap-1"><Loader2 size={12} className="animate-spin" /> Submitting…</p>}
                     </button>
                   ) : (
-                    <div className="border border-green-300 bg-green-50 p-4 text-sm text-green-800 font-semibold">
+                    <div className="border border-green-300 dark:border-green-800 bg-green-50 dark:bg-green-950/30 p-4 text-sm text-green-800 dark:text-green-400 font-semibold">
                       ✓ COD request submitted — you'll receive a confirmation shortly. Or pay now to confirm instantly.
                     </div>
                   )}
@@ -504,21 +507,21 @@ export default function CheckoutPage() {
             </div>
 
             <div className="lg:w-1/3">
-              <div className="bg-neutral-50 p-6 sticky top-8">
+              <div className="bg-neutral-50 dark:bg-neutral-900 p-6 sticky top-8">
                 <h2 className="text-lg font-bold uppercase tracking-wide mb-6">Order Summary</h2>
                 {isValidatingStock && (
                   <div className="flex items-center gap-2 text-sm text-neutral-500 mb-4">
                     <Loader2 size={14} className="animate-spin" /> Checking stock availability…
                   </div>
                 )}
-                <div className="flex flex-col gap-4 mb-6 border-b border-neutral-200 pb-6 max-h-[40vh] overflow-y-auto pr-1">
+                <div className="flex flex-col gap-4 mb-6 border-b border-neutral-200 dark:border-neutral-700 pb-6 max-h-[40vh] overflow-y-auto pr-1">
                   {items.map(item => {
                     const isOOS = outOfStockItems.includes(item.id);
                     const rawImg = item.imageUrl || '';
                     const imgSrc = rawImg.includes(',') ? rawImg.split(',')[0].trim() : rawImg.trim();
                     return (
                       <div key={item.id} className={`flex gap-4 ${isOOS ? 'opacity-50' : ''}`}>
-                        <div className="w-16 h-16 bg-neutral-200 flex-shrink-0 relative overflow-hidden">
+                        <div className="w-16 h-16 bg-neutral-200 dark:bg-neutral-800 flex-shrink-0 relative overflow-hidden">
                           {imgSrc ? (
                             <img src={imgSrc} alt={item.name} className="w-full h-full object-cover" loading="lazy" referrerPolicy="no-referrer" crossOrigin="anonymous" onError={(e) => { const el = e.target as HTMLImageElement; el.style.display = 'none'; el.parentElement!.innerHTML = '<div class="w-full h-full flex items-center justify-center text-neutral-400 text-[10px] font-bold">IMG</div>'; }} />
                           ) : (
@@ -531,7 +534,7 @@ export default function CheckoutPage() {
                           {isOOS ? (
                             <div className="flex items-center gap-1.5">
                               <span className="text-xs font-bold text-[#E63946] flex items-center gap-1"><AlertTriangle size={12} /> Out of Stock</span>
-                              <button type="button" onClick={() => removeItem(item.id)} className="text-xs underline text-neutral-500 hover:text-black ml-2">Remove</button>
+                              <button type="button" onClick={() => removeItem(item.id)} className="text-xs underline text-neutral-500 hover:text-black dark:hover:text-white ml-2">Remove</button>
                             </div>
                           ) : (
                             <span className="font-bold text-sm">{formatCurrency(item.price)}</span>
@@ -542,21 +545,21 @@ export default function CheckoutPage() {
                   })}
                 </div>
                 {/* Coupon Code Input */}
-                <div className="mb-6 border-b border-neutral-200 pb-6">
+                <div className="mb-6 border-b border-neutral-200 dark:border-neutral-700 pb-6">
                   <p className="text-sm font-bold uppercase tracking-wide mb-3 flex items-center gap-1.5"><Tag size={14} /> Coupon Code</p>
                   {appliedCoupon ? (
-                    <div className="flex items-center justify-between bg-green-50 border border-green-200 p-3">
+                    <div className="flex items-center justify-between bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 p-3">
                       <div>
-                        <span className="font-bold text-green-800 text-sm">{appliedCoupon.code}</span>
-                        <span className="text-xs text-green-600 ml-2">−{formatCurrency(appliedCoupon.discountAmount)} off</span>
+                        <span className="font-bold text-green-800 dark:text-green-400 text-sm">{appliedCoupon.code}</span>
+                        <span className="text-xs text-green-600 dark:text-green-500 ml-2">−{formatCurrency(appliedCoupon.discountAmount)} off</span>
                       </div>
                       <button type="button" onClick={handleRemoveCoupon} className="text-neutral-400 hover:text-red-500 transition-colors"><X size={16} /></button>
                     </div>
                   ) : (
                     <>
                       <div className="flex gap-2">
-                        <input type="text" value={couponCode} onChange={e => { setCouponCode(e.target.value.toUpperCase()); setCouponError(''); }} placeholder="Enter code" className="flex-1 border border-neutral-300 p-2.5 text-sm uppercase tracking-wider focus:outline-none focus:border-black" />
-                        <button type="button" onClick={handleApplyCoupon} disabled={isApplyingCoupon} className="bg-black text-white px-4 text-xs font-bold uppercase tracking-wider hover:bg-[#E63946] transition-colors disabled:opacity-50 flex items-center gap-1">
+                        <input type="text" value={couponCode} onChange={e => { setCouponCode(e.target.value.toUpperCase()); setCouponError(''); }} placeholder="Enter code" className="flex-1 border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 dark:text-white p-2.5 text-sm uppercase tracking-wider focus:outline-none focus:border-black dark:focus:border-white" />
+                        <button type="button" onClick={handleApplyCoupon} disabled={isApplyingCoupon} className="bg-black dark:bg-white text-white dark:text-black px-4 text-xs font-bold uppercase tracking-wider hover:bg-[#E63946] dark:hover:bg-[#E63946] dark:hover:text-white transition-colors disabled:opacity-50 flex items-center gap-1">
                           {isApplyingCoupon ? <Loader2 size={14} className="animate-spin" /> : 'Apply'}
                         </button>
                       </div>
@@ -566,17 +569,17 @@ export default function CheckoutPage() {
                 </div>
 
                 <div className="space-y-3 mb-6 text-sm">
-                  <div className="flex justify-between"><span className="text-neutral-600">Subtotal</span><span className="font-semibold">{formatCurrency(subtotal)}</span></div>
+                  <div className="flex justify-between"><span className="text-neutral-600 dark:text-neutral-400">Subtotal</span><span className="font-semibold">{formatCurrency(subtotal)}</span></div>
                   {appliedCoupon && (
                     <div className="flex justify-between text-green-600"><span>Discount ({appliedCoupon.code})</span><span className="font-semibold">−{formatCurrency(discountAmount)}</span></div>
                   )}
-                  <div className="flex justify-between"><span className="text-neutral-600">Shipping</span><span className="font-semibold text-green-600">Free</span></div>
+                  <div className="flex justify-between"><span className="text-neutral-600 dark:text-neutral-400">Shipping</span><span className="font-semibold text-green-600">Free</span></div>
                 </div>
-                <div className="border-t border-neutral-200 pt-4 flex justify-between items-center mb-6">
+                <div className="border-t border-neutral-200 dark:border-neutral-700 pt-4 flex justify-between items-center mb-6">
                   <span className="font-bold uppercase tracking-wide">Total</span>
                   <span className="text-xl font-bold">{formatCurrency(total)}</span>
                 </div>
-                <button type="submit" disabled={isInitiatingPayment || !!phoneError} className="w-full bg-black text-white py-4 font-bold uppercase tracking-wider hover:bg-[#E63946] transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
+                <button type="submit" disabled={isInitiatingPayment || !!phoneError} className="w-full bg-[#E63946] text-white py-4 font-bold uppercase tracking-wider hover:bg-black dark:hover:bg-white dark:hover:text-black transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
                   {isInitiatingPayment ? <><Loader2 size={18} className="animate-spin" /> Redirecting…</> : `Pay ${formatCurrency(total)} →`}
                 </button>
                 <p className="text-[10px] text-neutral-400 text-center mt-3">By placing your order you agree to our Terms &amp; Privacy Policy</p>

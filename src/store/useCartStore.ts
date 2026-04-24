@@ -36,6 +36,8 @@ export const useCartStore = create<CartStore>()(
       setUserId: (userId) => set({ _userId: userId }),
 
       syncFromServer: async (userId: string) => {
+        // If already synced for this user, don't re-merge
+        if (get()._userId === userId) return;
         try {
           const res = await fetch(`/api/user/sync?userId=${userId}`);
           if (res.ok) {
@@ -44,17 +46,17 @@ export const useCartStore = create<CartStore>()(
             
             if (Array.isArray(data.cart) && data.cart.length > 0) {
               if (localItems.length > 0) {
-                // Merge DB cart and local cart
+                // Merge DB cart and local cart — use max quantity, never sum
                 const mergedMap = new Map();
                 // Add DB items first
-                data.cart.forEach((item: CartItem) => mergedMap.set(item.id, item));
-                // Add/Merge local items
+                data.cart.forEach((item: CartItem) => mergedMap.set(item.id, { ...item, quantity: item.quantity || 1 }));
+                // Merge local items — keep the higher quantity
                 localItems.forEach((item) => {
                   if (mergedMap.has(item.id)) {
                     const existing = mergedMap.get(item.id);
-                    mergedMap.set(item.id, { ...existing, quantity: existing.quantity + item.quantity });
+                    mergedMap.set(item.id, { ...existing, quantity: Math.max(existing.quantity, item.quantity || 1) });
                   } else {
-                    mergedMap.set(item.id, item);
+                    mergedMap.set(item.id, { ...item, quantity: item.quantity || 1 });
                   }
                 });
                 

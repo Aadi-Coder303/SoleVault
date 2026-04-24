@@ -32,7 +32,7 @@ export default function CartPage() {
       {items.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-neutral-500 mb-6 font-medium">{emptyText}</p>
-          <Link href="/products" className="inline-block bg-black text-white px-8 py-3 font-bold uppercase tracking-wider hover:bg-[#E63946] transition-colors">
+          <Link href="/products" className="inline-block bg-black dark:bg-white text-white dark:text-black px-8 py-3 font-bold uppercase tracking-wider hover:bg-[#E63946] dark:hover:bg-[#E63946] dark:hover:text-white transition-colors">
             Continue Shopping
           </Link>
         </div>
@@ -65,7 +65,7 @@ export default function CartPage() {
                         >+</button>
                       </div>
                       <button 
-                        className="text-sm underline text-neutral-500 hover:text-black"
+                        className="text-sm underline text-neutral-500 hover:text-black dark:hover:text-white"
                         onClick={() => removeItem(item.id)}
                       >
                         Remove
@@ -83,11 +83,11 @@ export default function CartPage() {
               <h2 className="text-lg font-bold uppercase tracking-wide mb-6">Summary</h2>
               <div className="space-y-4 mb-6">
                 <div className="flex justify-between">
-                  <span className="text-neutral-600">Subtotal</span>
+                  <span className="text-neutral-600 dark:text-neutral-400">Subtotal</span>
                   <span className="font-semibold">{formatCurrency(getTotalPrice())}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-neutral-600">Shipping</span>
+                  <span className="text-neutral-600 dark:text-neutral-400">Shipping</span>
                   <span className="font-semibold">Calculated at checkout</span>
                 </div>
               </div>
