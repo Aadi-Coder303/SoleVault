@@ -4,6 +4,7 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import BuyerShell from "@/components/BuyerShell";
 import AuthSync from "@/components/AuthSync";
+import VisitorTracker from "@/components/VisitorTracker";
 import { Toaster } from "react-hot-toast";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -23,6 +24,7 @@ export default function RootLayout({
       <body className={`${inter.className} min-h-screen flex flex-col antialiased text-black bg-white`}>
         <Navbar />
         <AuthSync />
+        <VisitorTracker />
         <BuyerShell>
           <div className="flex-1">
             {children}

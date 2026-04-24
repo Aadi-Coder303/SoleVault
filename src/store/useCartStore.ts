@@ -69,6 +69,7 @@ export const useCartStore = create<CartStore>()(
       },
 
       addItem: (item) => {
+        const isNew = !get().items.find(i => i.id === item.id);
         set((state) => {
           const existingItem = state.items.find(i => i.id === item.id);
           if (existingItem) {
@@ -81,6 +82,21 @@ export const useCartStore = create<CartStore>()(
           return { items: [...state.items, { ...item, quantity: 1 }] };
         });
         get().syncToServer();
+        // Fire cart event for owner notifications (only for new items)
+        if (isNew && typeof window !== 'undefined') {
+          const visitorId = localStorage.getItem('sv_visitor_id') || 'unknown';
+          fetch('/api/analytics/cart-event', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              productName: item.name,
+              productId: item.productId,
+              size: item.size,
+              price: item.price,
+              visitorId,
+            }),
+          }).catch(() => {});
+        }
       },
 
       removeItem: (id) => {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Loader2, Plus, Minus, Edit2, RefreshCw, Trash2, ToggleLeft, ToggleRight, Tag } from 'lucide-react';
+import { Loader2, Plus, Minus, Edit2, RefreshCw, Trash2, ToggleLeft, ToggleRight, Tag, Eye, ShoppingCart } from 'lucide-react';
 import { twMerge } from 'tailwind-merge';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -36,11 +36,17 @@ interface OrderData {
 export default function DashboardPage() {
   const router = useRouter();
   const supabase = createClient();
-  const [activeTab, setActiveTab] = useState<'inventory' | 'pending' | 'confirmed' | 'shipped' | 'coupons'>('pending');
+  const [activeTab, setActiveTab] = useState<'inventory' | 'pending' | 'confirmed' | 'shipped' | 'coupons' | 'activity'>('pending');
   const [products, setProducts] = useState<ProductData[]>([]);
   const [orders, setOrders] = useState<OrderData[]>([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [isLoadingOrders, setIsLoadingOrders] = useState(true);
+
+  // Live analytics
+  const [liveVisitors, setLiveVisitors] = useState(0);
+  const [visitorDetails, setVisitorDetails] = useState<any[]>([]);
+  const [cartEvents, setCartEvents] = useState<any[]>([]);
+  const [isLoadingActivity, setIsLoadingActivity] = useState(true);
 
   // Coupon state
   const [coupons, setCoupons] = useState<any[]>([]);
@@ -92,6 +98,24 @@ export default function DashboardPage() {
     finally { setIsLoadingCoupons(false); }
   };
 
+  const fetchLiveData = async () => {
+    try {
+      const [heartbeatRes, cartRes] = await Promise.all([
+        fetch('/api/analytics/heartbeat'),
+        fetch('/api/analytics/cart-event'),
+      ]);
+      if (heartbeatRes.ok) {
+        const data = await heartbeatRes.json();
+        setLiveVisitors(data.count);
+        setVisitorDetails(data.visitors || []);
+      }
+      if (cartRes.ok) {
+        setCartEvents(await cartRes.json());
+      }
+    } catch (e) { console.error(e); }
+    finally { setIsLoadingActivity(false); }
+  };
+
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -103,6 +127,10 @@ export default function DashboardPage() {
     fetchProducts();
     fetchOrders();
     fetchCoupons();
+    fetchLiveData();
+    // Poll live data every 15 seconds
+    const liveInterval = setInterval(fetchLiveData, 15000);
+    return () => clearInterval(liveInterval);
   }, [supabase.auth, router]);
 
   const handleScrape = async () => {
@@ -319,13 +347,20 @@ export default function DashboardPage() {
             <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#E63946] mb-1">Admin Panel</p>
             <h1 className="text-3xl font-black uppercase tracking-tight">Owner Dashboard</h1>
           </div>
-          <button onClick={() => { fetchProducts(); fetchOrders(); fetchCoupons(); }} className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-neutral-500 hover:text-black transition-colors">
+          <button onClick={() => { fetchProducts(); fetchOrders(); fetchCoupons(); fetchLiveData(); }} className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-neutral-500 hover:text-black transition-colors">
             <RefreshCw size={14} /> Refresh
           </button>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
+          <div className="bg-white p-5 border border-neutral-200">
+            <h3 className="text-[10px] text-neutral-500 uppercase tracking-widest mb-1">Live Visitors</h3>
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-2.5 w-2.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span></span>
+              <p className="text-xl font-black">{liveVisitors}</p>
+            </div>
+          </div>
           <div className="bg-white p-5 border border-neutral-200"><h3 className="text-[10px] text-neutral-500 uppercase tracking-widest mb-1">Revenue</h3><p className="text-xl font-black">{formatCurrency(totalRevenue)}</p></div>
           <div className="bg-white p-5 border border-neutral-200"><h3 className="text-[10px] text-neutral-500 uppercase tracking-widest mb-1">Pending</h3><p className="text-xl font-black">{pendingOrders.length}</p></div>
           <div className="bg-white p-5 border border-neutral-200"><h3 className="text-[10px] text-neutral-500 uppercase tracking-widest mb-1">Confirmed</h3><p className="text-xl font-black">{confirmedOrders.length}</p></div>
@@ -341,6 +376,10 @@ export default function DashboardPage() {
             { key: 'shipped', label: 'Shipped', count: shippedOrders.length },
             { key: 'inventory', label: 'Inventory' },
             { key: 'coupons', label: 'Coupons', count: activeCoupons },
+            { key: 'activity', label: 'Activity', count: cartEvents.filter(e => {
+              const age = Date.now() - new Date(e.createdAt).getTime();
+              return age < 60 * 60 * 1000; // last hour
+            }).length },
           ] as const).map(t => (
             <button key={t.key} onClick={() => setActiveTab(t.key)}
               className={twMerge("px-5 py-3 font-bold uppercase tracking-wide text-xs border-b-2 whitespace-nowrap transition-colors flex items-center gap-2",
@@ -575,6 +614,80 @@ export default function DashboardPage() {
                       );
                     })}
                   </tbody></table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'activity' && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Live Visitors */}
+            <div className="border border-neutral-200 bg-white overflow-hidden self-start">
+              <div className="flex justify-between items-center p-4 bg-neutral-50 border-b border-neutral-200">
+                <h2 className="text-lg font-bold uppercase tracking-wide flex items-center gap-2"><Eye size={16} /> Live Visitors</h2>
+                <div className="flex items-center gap-2">
+                  <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span></span>
+                  <span className="text-xs font-bold">{liveVisitors} online</span>
+                </div>
+              </div>
+              {visitorDetails.length === 0 ? (
+                <div className="p-8 text-center text-neutral-500 text-sm">No active visitors right now.</div>
+              ) : (
+                <div className="max-h-[400px] overflow-y-auto">
+                  <table className="w-full text-left"><tbody>
+                    {visitorDetails.map(v => (
+                      <tr key={v.id} className="border-b border-neutral-100 hover:bg-neutral-50">
+                        <td className="py-2.5 px-4">
+                          <span className="text-xs font-mono text-neutral-400">{v.id.slice(0, 12)}…</span>
+                        </td>
+                        <td className="py-2.5 px-4">
+                          <span className="text-xs font-semibold">{v.page}</span>
+                        </td>
+                        <td className="py-2.5 px-4 text-right">
+                          <span className="text-[10px] text-neutral-400">{new Date(v.lastSeen).toLocaleTimeString()}</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody></table>
+                </div>
+              )}
+            </div>
+
+            {/* Cart Activity Feed */}
+            <div className="border border-neutral-200 bg-white overflow-hidden self-start">
+              <div className="flex justify-between items-center p-4 bg-neutral-50 border-b border-neutral-200">
+                <h2 className="text-lg font-bold uppercase tracking-wide flex items-center gap-2"><ShoppingCart size={16} /> Cart Activity</h2>
+                <button onClick={fetchLiveData} className="text-xs font-bold uppercase underline text-neutral-500 hover:text-black">Refresh</button>
+              </div>
+              {isLoadingActivity ? (
+                <div className="p-8 text-center"><Loader2 size={24} className="animate-spin mx-auto text-neutral-400" /></div>
+              ) : cartEvents.length === 0 ? (
+                <div className="p-8 text-center text-neutral-500 text-sm">No cart activity yet.</div>
+              ) : (
+                <div className="max-h-[600px] overflow-y-auto">
+                  {cartEvents.map((e: any) => {
+                    const age = Date.now() - new Date(e.createdAt).getTime();
+                    const isRecent = age < 5 * 60 * 1000;
+                    const timeAgo = age < 60000 ? 'just now'
+                      : age < 3600000 ? `${Math.floor(age / 60000)}m ago`
+                      : age < 86400000 ? `${Math.floor(age / 3600000)}h ago`
+                      : new Date(e.createdAt).toLocaleDateString();
+                    return (
+                      <div key={e.id} className={`flex items-center gap-3 p-3 border-b border-neutral-100 ${isRecent ? 'bg-green-50' : ''}`}>
+                        <div className="w-8 h-8 bg-neutral-100 rounded-sm flex items-center justify-center shrink-0">
+                          <ShoppingCart size={14} className={isRecent ? 'text-green-600' : 'text-neutral-400'} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold truncate">{e.productName}</p>
+                          <p className="text-[10px] text-neutral-500">Size {e.size} · {formatCurrency(e.price)}</p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <span className={`text-[10px] font-bold ${isRecent ? 'text-green-600' : 'text-neutral-400'}`}>{timeAgo}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
