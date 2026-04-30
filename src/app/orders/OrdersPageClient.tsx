@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { Loader2, Package, Clock, CheckCircle, XCircle, Truck, ExternalLink, Copy } from 'lucide-react';
+import { Skeleton, OrderSkeleton } from '@/components/Skeleton';
 import { formatCurrency } from '@/lib/formatCurrency';
 import Link from 'next/link';
 
@@ -91,8 +92,16 @@ export default function MyOrdersPage() {
 
   if (loading) {
     return (
-      <main className="min-h-[60vh] flex items-center justify-center">
-        <Loader2 size={32} className="animate-spin text-neutral-400" />
+      <main className="container mx-auto px-4 py-12 max-w-3xl min-h-[60vh]">
+        <div className="mb-10">
+          <Skeleton className="h-4 w-20 mb-3" />
+          <Skeleton className="h-10 w-48" />
+        </div>
+        <div className="space-y-4">
+          <OrderSkeleton />
+          <OrderSkeleton />
+          <OrderSkeleton />
+        </div>
       </main>
     );
   }

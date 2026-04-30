@@ -3,6 +3,7 @@ import LoadMoreProducts from '@/components/LoadMoreProducts';
 import ProductSort from '@/components/ProductSort';
 import prisma from '@/lib/prisma';
 import { Suspense } from 'react';
+import { FilterSkeleton, Skeleton } from '@/components/Skeleton';
 
 export const revalidate = 60;
 
@@ -53,7 +54,7 @@ export default async function ProductsPage({
     <main className="container mx-auto px-4 py-8 flex flex-col lg:flex-row gap-8">
       {/* Sidebar Filters */}
       <div className="hidden lg:block w-64 shrink-0">
-        <Suspense fallback={<div>Loading filters...</div>}>
+        <Suspense fallback={<FilterSkeleton />}>
           <FilterSidebar />
         </Suspense>
       </div>
@@ -65,7 +66,7 @@ export default async function ProductsPage({
             {category ? `${category} Sneakers` : 'All Sneakers'}
             <span className="text-sm font-normal text-neutral-400 ml-2">({totalCount})</span>
           </h1>
-          <Suspense fallback={<div>Loading...</div>}>
+          <Suspense fallback={<Skeleton className="h-10 w-40" />}>
             <ProductSort />
           </Suspense>
         </div>
