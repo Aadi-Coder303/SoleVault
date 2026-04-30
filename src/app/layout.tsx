@@ -15,6 +15,9 @@ export const metadata: Metadata = {
   description: "100% authentic sneakers sourced from official drops. Elevate your collection today.",
 };
 
+import Footer from "@/components/Footer";
+import WhatsAppButton from "@/components/WhatsAppButton";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -32,6 +35,8 @@ export default function RootLayout({
               {children}
             </div>
           </BuyerShell>
+          <Footer />
+          <WhatsAppButton />
           <Toaster position="bottom-center" toastOptions={{ className: 'text-sm font-bold uppercase tracking-wide !bg-white !text-black dark:!bg-neutral-800 dark:!text-white' }} />
         </ThemeProvider>
       </body>

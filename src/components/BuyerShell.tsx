@@ -36,8 +36,6 @@ export default function BuyerShell({ children }: { children: React.ReactNode }) 
     <>
       <AnnouncementBar />
       {children}
-      <Footer />
-      <WhatsAppButton />
     </>
   );
 }

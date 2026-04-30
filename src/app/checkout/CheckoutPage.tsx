@@ -649,7 +649,9 @@ export default function CheckoutPage() {
                 <p className="text-xs text-neutral-400 text-center italic">Complete the address step to proceed to payment.</p>
               )}
               
-              <p className="text-[10px] text-neutral-400 text-center mt-3">By placing your order you agree to our Terms &amp; Privacy Policy</p>
+              <p className="text-[10px] text-neutral-400 text-center mt-3">
+                By placing your order you agree to our <Link href="/terms" className="underline hover:text-black dark:hover:text-white transition-colors">Terms</Link> &amp; <Link href="/privacy" className="underline hover:text-black dark:hover:text-white transition-colors">Privacy Policy</Link>
+              </p>
             </div>
           </div>
         </div>
