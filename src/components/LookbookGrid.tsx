@@ -13,16 +13,18 @@ interface LookbookProduct {
   imageUrl: string;
 }
 
-// Predefined layout patterns for visual variety
+// Perfect magazine layout patterns for visual variety (No empty spaces)
 const LAYOUT_PATTERNS = [
-  // pattern 0: 2 tall + 1 wide
   [
-    { colSpan: 'md:col-span-4', rowSpan: 'md:row-span-2', height: 'h-[350px] md:h-[600px]' },
-    { colSpan: 'md:col-span-4', rowSpan: 'md:row-span-1', height: 'h-[280px]' },
-    { colSpan: 'md:col-span-4', rowSpan: 'md:row-span-1', height: 'h-[280px]' },
-    { colSpan: 'md:col-span-8', rowSpan: 'md:row-span-1', height: 'h-[320px]' },
-    { colSpan: 'md:col-span-4', rowSpan: 'md:row-span-1', height: 'h-[320px]' },
-    { colSpan: 'md:col-span-6', rowSpan: 'md:row-span-1', height: 'h-[350px]' },
+    // Row 1 & 2: Tall vertical on left (4 cols) + Wide horizontal top right (8 cols)
+    { colSpan: 'md:col-span-4', rowSpan: 'md:row-span-2', height: 'h-[300px] md:h-[620px]' }, // Item 0
+    { colSpan: 'md:col-span-8', rowSpan: 'md:row-span-1', height: 'h-[300px]' },             // Item 1
+    // Row 2: Two squares filling the remaining 8 cols under Item 1
+    { colSpan: 'md:col-span-4', rowSpan: 'md:row-span-1', height: 'h-[300px]' },             // Item 2
+    { colSpan: 'md:col-span-4', rowSpan: 'md:row-span-1', height: 'h-[300px]' },             // Item 3
+    // Row 3: Two wide rectangles (6+6 = 12)
+    { colSpan: 'md:col-span-6', rowSpan: 'md:row-span-1', height: 'h-[350px]' },             // Item 4
+    { colSpan: 'md:col-span-6', rowSpan: 'md:row-span-1', height: 'h-[350px]' },             // Item 5
   ],
 ];
 
@@ -54,14 +56,15 @@ export default function LookbookGrid({ products }: { products: LookbookProduct[]
         </button>
       </div>
 
-      {/* Dynamic Grid */}
-      <div className={`grid grid-cols-2 md:grid-cols-3 gap-4 lg:gap-6 transition-opacity duration-300 ${isShuffling ? 'opacity-0 scale-[0.98]' : 'opacity-100 scale-100'}`}>
+      {/* Dynamic Magazine Grid */}
+      <div className={`grid grid-cols-1 md:grid-cols-12 gap-3 lg:gap-4 transition-opacity duration-300 ${isShuffling ? 'opacity-0 scale-[0.98]' : 'opacity-100 scale-100'}`}>
         {items.map((product, i) => {
+          const l = layout[i % layout.length];
           return (
             <Link
               key={`${product.id}-${i}`}
               href={`/products/${product.id}`}
-              className="group relative aspect-[3/4] overflow-hidden rounded-2xl bg-neutral-100 dark:bg-neutral-900 flex items-end shadow-sm hover:shadow-lg transition-shadow duration-300"
+              className={`group relative ${l.colSpan} ${l.rowSpan} ${l.height} overflow-hidden rounded-xl bg-neutral-100 dark:bg-neutral-900 flex items-end shadow-sm hover:shadow-lg transition-shadow duration-300`}
             >
               {/* Image */}
               <img
