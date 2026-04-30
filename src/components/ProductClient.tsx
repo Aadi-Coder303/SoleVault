@@ -123,22 +123,23 @@ export default function ProductClient({ product, colorVariants = [] }: { product
       {/* Main Layout - Image & Actions */}
       <div className="w-full flex flex-col lg:flex-row gap-12 lg:gap-16 max-w-[1400px] items-start justify-center">
         
-        {/* Left: Image Gallery (Enlarged) */}
-        <div className="w-full lg:w-[60%] flex justify-center">
-          <div className="w-full rounded-3xl overflow-hidden bg-neutral-50 dark:bg-neutral-900/50 p-2 sm:p-6">
+        {/* Left: Image Gallery & Description */}
+        <div className="w-full lg:w-[60%] flex flex-col gap-8 items-center lg:items-start">
+          <div className="w-full rounded-3xl overflow-hidden bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-2 sm:p-6 shadow-sm">
             <ImageGallery images={galleryImages} altText={product.name} />
+          </div>
+          
+          {/* Description (Under Photo) */}
+          <div className="w-full px-2 lg:px-4 mb-8 lg:mb-0">
+            <h3 className="font-semibold mb-4 text-sm uppercase tracking-widest text-neutral-900 dark:text-neutral-100 border-b border-neutral-200 dark:border-neutral-800 pb-2 inline-block">Product Details</h3>
+            <p className="text-neutral-700 dark:text-neutral-300 text-sm sm:text-base leading-relaxed whitespace-pre-wrap font-medium">
+              {product.description || 'No description available for this product.'}
+            </p>
           </div>
         </div>
 
-        {/* Right: Info Stack */}
-        <div className="w-full lg:w-[40%] max-w-md flex flex-col">
-
-        {/* Description (Moved Up & Resized) */}
-        <div className="mb-8">
-          <p className="text-neutral-600 dark:text-neutral-400 text-sm sm:text-base leading-relaxed whitespace-pre-wrap font-light">
-            {product.description || 'No description available for this product.'}
-          </p>
-        </div>
+        {/* Right: Info Stack (Buying Options) */}
+        <div className="w-full lg:w-[40%] max-w-md flex flex-col bg-white dark:bg-neutral-950 rounded-3xl p-6 sm:p-8 border border-neutral-200 dark:border-neutral-800 shadow-xl shadow-neutral-200/50 dark:shadow-none">
 
         {/* Color Variants */}
         {colorVariants.length > 0 && (
@@ -178,26 +179,26 @@ export default function ProductClient({ product, colorVariants = [] }: { product
           <SizeSelector sizes={formattedSizes} onSelect={handleSizeSelect} />
         </div>
 
-        {/* CTAs - Pill Shaped */}
+        {/* CTAs - Pill Shaped & High Contrast */}
         <div className="flex flex-col gap-3 mb-10">
           <button
             onClick={handleBuyNow}
-            className="w-full bg-neutral-900 dark:bg-neutral-100 text-white dark:text-black py-4 rounded-full font-medium uppercase tracking-[0.2em] text-xs hover:bg-neutral-800 dark:hover:bg-white transition-colors flex items-center justify-center gap-2 shadow-sm"
+            className="w-full bg-black dark:bg-white text-white dark:text-black py-4 rounded-full font-bold uppercase tracking-[0.2em] text-xs hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors flex items-center justify-center gap-2 shadow-md hover:shadow-lg hover:-translate-y-0.5"
           >
-            <Zap size={14} /> Buy Now
+            <Zap size={14} className="fill-current" /> Buy Now
           </button>
           <div className="flex gap-3">
             <button
               onClick={handleAddToCart}
-              className="flex-1 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-800 dark:text-neutral-200 py-3.5 rounded-full font-medium uppercase tracking-[0.15em] text-xs hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+              className="flex-1 bg-white dark:bg-black border-2 border-black dark:border-white text-black dark:text-white py-3.5 rounded-full font-bold uppercase tracking-[0.15em] text-xs hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5"
             >
               Add to Bag
             </button>
             <button
               onClick={() => toggleItem(product.id)}
-              className="w-12 h-12 flex-shrink-0 rounded-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 flex justify-center items-center hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+              className="w-12 h-12 flex-shrink-0 rounded-full bg-neutral-100 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-neutral-100 flex justify-center items-center hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors shadow-sm"
             >
-              <Heart className={mounted && hasItem(product.id) ? "fill-current text-neutral-900 dark:text-white" : ""} size={16} />
+              <Heart className={mounted && hasItem(product.id) ? "fill-current text-[#E63946]" : ""} size={16} />
             </button>
           </div>
         </div>
