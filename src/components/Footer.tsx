@@ -65,8 +65,8 @@ export default function Footer() {
           &copy; {new Date().getFullYear()} Sole Vault. All rights reserved.
         </p>
         <div className="flex gap-6 text-xs text-neutral-500">
-          <Link href="/shipping" className="hover:text-white transition-colors">Terms</Link>
-          <Link href="/shipping" className="hover:text-white transition-colors">Privacy</Link>
+          <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
+          <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
         </div>
       </div>
     </footer>

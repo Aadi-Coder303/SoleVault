@@ -213,7 +213,7 @@ export default function ProductClient({ product, colorVariants = [] }: { product
 
         {/* WhatsApp CTA */}
         <a
-          href={`https://wa.me/919876543210?text=${encodeURIComponent(`Hi! I'm interested in ${product.name}`)}`}
+          href={`https://wa.me/910000000000?text=${encodeURIComponent(`Hi! I'm interested in ${product.name}`)}`}
           target="_blank"
           rel="noopener noreferrer"
           className="mt-8 flex items-center justify-center gap-2 border border-neutral-200 dark:border-neutral-800 text-neutral-500 hover:text-black dark:hover:text-white py-3 rounded-full text-[10px] font-medium uppercase tracking-widest transition-colors"

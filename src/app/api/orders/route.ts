@@ -26,29 +26,34 @@ export async function GET(req: Request) {
       return NextResponse.json(orders);
     }
 
-    // Customer: fetch by email/phone
-    if (!email && !phone) {
-      return NextResponse.json([], { status: 200 });
-    }
-
-    // Security check: Must be logged in, and if not an owner, can only fetch their own email
-    if (!isOwner) {
-      if (!session?.user?.email) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
-      // If they provided an email that doesn't match their session, or if they only provided a phone
-      if (email !== session.user.email) {
-        return NextResponse.json({ error: 'Unauthorized to view these orders' }, { status: 403 });
-      }
+    // Security check: Must be logged in
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const where: any = { OR: [] };
-    if (email) where.OR.push({ customerEmail: email });
-    // We only allow phone lookup if they also proved email ownership (which we did above) or if they are owner
-    if (phone) where.OR.push({ customerPhone: phone });
 
-    if (where.OR.length === 0) {
-      return NextResponse.json([]);
+    if (isOwner) {
+      // Owners can query by the requested email or phone params
+      if (email) where.OR.push({ customerEmail: email });
+      if (phone) where.OR.push({ customerPhone: phone });
+      
+      // If owner didn't provide email or phone but didn't request 'all', just return empty to prevent accidental full table dump
+      if (!email && !phone) {
+         return NextResponse.json([], { status: 200 });
+      }
+    } else {
+      // Regular users: COMPLETELY IGNORE query parameters to prevent IDOR.
+      // Fetch ONLY based on their verified session data.
+      const userEmail = session.user.email;
+      const userPhone = session.user.phone;
+      
+      if (userEmail) where.OR.push({ customerEmail: userEmail });
+      if (userPhone) where.OR.push({ customerPhone: userPhone });
+      
+      if (where.OR.length === 0) {
+        return NextResponse.json([]);
+      }
     }
 
     const orders = await prisma.order.findMany({
