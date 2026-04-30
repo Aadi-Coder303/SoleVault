@@ -232,6 +232,7 @@ export default function ProductClient({ product, colorVariants = [] }: { product
           Ask us about this product
         </a>
       </div>
+      </div>
     </main>
   );
 }
