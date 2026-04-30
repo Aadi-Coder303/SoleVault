@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { Send, Clock, Loader2 } from 'lucide-react';
+import SecureEmail from '@/components/SecureEmail';
 
 export default function ContactPage() {
   const [loading, setLoading] = useState(false);
@@ -56,6 +57,16 @@ export default function ContactPage() {
               <div>
                 <p className="font-bold text-sm text-black">Hours</p>
                 <p className="text-sm">Mon – Sat, 10:00 AM – 6:00 PM IST</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 text-neutral-600 p-4 bg-neutral-50 border border-neutral-100 hover:border-neutral-200 transition-colors">
+              <Send size={18} className="text-[#E63946] shrink-0" />
+              <div>
+                <p className="font-bold text-sm text-black">Email Support</p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <SecureEmail user="support" domain="solevault" tld="com" />
+                </div>
               </div>
             </div>
           </div>

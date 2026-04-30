@@ -1,9 +1,7 @@
-import Link from 'next/link';
+'use client';
 
-export const metadata = {
-  title: 'Privacy Policy | Sole Vault',
-  description: 'Privacy Policy and Data Protection guidelines for Sole Vault',
-};
+import Link from 'next/link';
+import SecureEmail from '@/components/SecureEmail';
 
 export default function PrivacyPolicyPage() {
   return (
@@ -62,7 +60,7 @@ export default function PrivacyPolicyPage() {
         <h2 className="text-2xl font-bold uppercase tracking-wide mt-12 mb-6">5. Contact Us</h2>
         <p className="mb-8 text-neutral-700 dark:text-neutral-300">
           For any questions, concerns, or to exercise your rights regarding your personal data, please contact our Grievance Officer at: <br />
-          <a href="mailto:privacy@solevault.com" className="text-blue-600 dark:text-blue-400 hover:underline">privacy@solevault.com</a>
+          <SecureEmail user="privacy" domain="solevault" tld="com" className="text-blue-600 dark:text-blue-400 hover:underline" />
         </p>
       </div>
       
