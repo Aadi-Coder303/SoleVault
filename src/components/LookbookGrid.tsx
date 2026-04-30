@@ -55,14 +55,13 @@ export default function LookbookGrid({ products }: { products: LookbookProduct[]
       </div>
 
       {/* Dynamic Grid */}
-      <div className={`grid grid-cols-1 md:grid-cols-12 gap-3 transition-opacity duration-300 ${isShuffling ? 'opacity-0 scale-[0.98]' : 'opacity-100 scale-100'}`}>
+      <div className={`grid grid-cols-2 md:grid-cols-3 gap-4 lg:gap-6 transition-opacity duration-300 ${isShuffling ? 'opacity-0 scale-[0.98]' : 'opacity-100 scale-100'}`}>
         {items.map((product, i) => {
-          const l = layout[i % layout.length];
           return (
             <Link
               key={`${product.id}-${i}`}
               href={`/products/${product.id}`}
-              className={`group relative ${l.colSpan} ${l.height} overflow-hidden bg-neutral-100 dark:bg-neutral-900 flex items-end`}
+              className="group relative aspect-[3/4] overflow-hidden rounded-2xl bg-neutral-100 dark:bg-neutral-900 flex items-end shadow-sm hover:shadow-lg transition-shadow duration-300"
             >
               {/* Image */}
               <img
@@ -73,13 +72,13 @@ export default function LookbookGrid({ products }: { products: LookbookProduct[]
               />
               
               {/* Gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-10" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-10 opacity-80 group-hover:opacity-90 transition-opacity duration-300" />
               
               {/* Info */}
-              <div className="relative z-20 p-6 w-full transform group-hover:-translate-y-1 transition-transform duration-500">
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#E63946] mb-1">{product.brand}</p>
-                <h3 className="text-white text-lg md:text-xl font-black uppercase tracking-tight mb-2 line-clamp-2">{product.name}</h3>
-                <span className="text-white/70 text-sm font-bold">{formatCurrency(product.price)}</span>
+              <div className="relative z-20 p-5 md:p-6 w-full transform group-hover:-translate-y-1 transition-transform duration-500">
+                <p className="text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] text-white/80 mb-1">{product.brand}</p>
+                <h3 className="text-white text-base md:text-lg font-serif tracking-wide mb-2 line-clamp-2">{product.name}</h3>
+                <span className="text-white text-sm font-medium tracking-widest">{formatCurrency(product.price)}</span>
               </div>
             </Link>
           );

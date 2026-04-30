@@ -118,7 +118,7 @@ export default function ProductCard({ id, name, price, originalPrice, imageUrl, 
                 src={imageUrl.split(',')[0].trim()} 
                 alt={name} 
                 className={twMerge(
-                  "object-cover w-full h-full scale-[1.04] group-hover:scale-110 transition-transform duration-500 ease-out",
+                  "object-contain w-full h-full p-2 sm:p-4 group-hover:scale-105 transition-transform duration-500 ease-out mix-blend-multiply dark:mix-blend-normal",
                   imgLoaded ? "opacity-100" : "opacity-0"
                 )}
                 onLoad={() => setImgLoaded(true)}
