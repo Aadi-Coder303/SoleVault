@@ -45,15 +45,16 @@ export default function LoadMoreProducts({ initialProducts, totalCount, pageSize
   return (
     <>
       <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-6">
-        {products.map((p) => (
-          <ProductCard
-            key={p.id}
-            id={p.id}
-            name={p.name}
-            price={p.price}
-            imageUrl={p.imageUrl || ''}
-            sizes={p.sizes}
-          />
+        {products.map((p, i) => (
+          <div key={p.id} className={`animate-fade-in stagger-${(i % 10) + 1} flex flex-col h-full`}>
+            <ProductCard
+              id={p.id}
+              name={p.name}
+              price={p.price}
+              imageUrl={p.imageUrl || ''}
+              sizes={p.sizes}
+            />
+          </div>
         ))}
         {products.length === 0 && (
           <div className="col-span-full py-12 text-center text-neutral-500">

@@ -100,7 +100,7 @@ export default function HeatCarousel({ products }: HeatCarouselProps) {
           return (
             <div
               key={p.id}
-              className="w-[260px] sm:w-[280px] lg:w-[300px] shrink-0 snap-center"
+              className={`w-[260px] sm:w-[280px] lg:w-[300px] shrink-0 snap-center animate-fade-in stagger-${(i % 10) + 1}`}
               style={{
                 transform: `perspective(800px) scale(${scale}) translateY(${translateY}px) rotateY(${rotateY}deg)`,
                 zIndex,

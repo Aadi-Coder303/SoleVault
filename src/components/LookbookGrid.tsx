@@ -64,7 +64,7 @@ export default function LookbookGrid({ products }: { products: LookbookProduct[]
             <Link
               key={`${product.id}-${i}`}
               href={`/products/${product.id}`}
-              className={`group relative ${l.colSpan} ${l.rowSpan} ${l.height} overflow-hidden rounded-xl bg-neutral-100 dark:bg-neutral-900 flex items-end shadow-sm hover:shadow-lg transition-shadow duration-300`}
+              className={`group relative ${l.colSpan} ${l.rowSpan} ${l.height} overflow-hidden rounded-xl bg-neutral-100 dark:bg-neutral-900 flex items-end shadow-sm hover:shadow-lg transition-shadow duration-300 animate-fade-in stagger-${(i % 10) + 1}`}
             >
               {/* Image */}
               <img
