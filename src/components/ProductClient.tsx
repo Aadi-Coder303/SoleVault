@@ -6,7 +6,7 @@ import { useCartStore } from '@/store/useCartStore';
 import { useWishlistStore } from '@/store/useWishlistStore';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { useState, useEffect } from 'react';
-import { Heart, ShieldCheck, Truck, RefreshCcw, Zap } from 'lucide-react';
+import { Heart, ShieldCheck, Truck, RefreshCcw, Zap, ChevronDown } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 
@@ -120,26 +120,18 @@ export default function ProductClient({ product, colorVariants = [] }: { product
         </div>
       </div>
 
-      {/* Main Layout - Image & Actions */}
-      <div className="w-full flex flex-col lg:flex-row gap-12 lg:gap-16 max-w-[1400px] items-start justify-center">
+      {/* Main Layout - Image, Actions, Description */}
+      <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-y-12 lg:gap-16 max-w-[1400px] items-start justify-center">
         
-        {/* Left: Image Gallery & Description */}
-        <div className="w-full lg:w-[60%] flex flex-col gap-8 items-center lg:items-start">
+        {/* Image Gallery */}
+        <div className="lg:col-span-7 order-1 flex justify-center w-full">
           <div className="w-full rounded-3xl overflow-hidden bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-2 sm:p-6 shadow-sm">
             <ImageGallery images={galleryImages} altText={product.name} />
-          </div>
-          
-          {/* Description (Under Photo) */}
-          <div className="w-full px-2 lg:px-4 mb-8 lg:mb-0">
-            <h3 className="font-semibold mb-4 text-sm uppercase tracking-widest text-neutral-900 dark:text-neutral-100 border-b border-neutral-200 dark:border-neutral-800 pb-2 inline-block">Product Details</h3>
-            <p className="text-neutral-700 dark:text-neutral-300 text-sm sm:text-base leading-relaxed whitespace-pre-wrap font-medium">
-              {product.description || 'No description available for this product.'}
-            </p>
           </div>
         </div>
 
         {/* Right: Info Stack (Buying Options) */}
-        <div className="w-full lg:w-[40%] max-w-md flex flex-col bg-white dark:bg-neutral-950 rounded-3xl p-6 sm:p-8 border border-neutral-200 dark:border-neutral-800 shadow-xl shadow-neutral-200/50 dark:shadow-none">
+        <div className="lg:col-span-5 order-2 lg:order-3 w-full max-w-md mx-auto lg:mx-0 flex flex-col bg-white dark:bg-neutral-950 rounded-3xl p-6 sm:p-8 border border-neutral-200 dark:border-neutral-800 shadow-xl shadow-neutral-200/50 dark:shadow-none">
 
         {/* Color Variants */}
         {colorVariants.length > 0 && (

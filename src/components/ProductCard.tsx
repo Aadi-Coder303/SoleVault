@@ -138,8 +138,8 @@ export default function ProductCard({ id, name, price, originalPrice, imageUrl, 
           )}
         </div>
         
-        {/* Quick Add CTA on Hover */}
-        <div className="absolute bottom-0 left-0 w-full p-3 sm:p-4 opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all duration-300 ease-out">
+        {/* Quick Add CTA on Hover (Desktop Only) */}
+        <div className="hidden lg:block absolute bottom-0 left-0 w-full p-3 sm:p-4 opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all duration-300 ease-out">
           {showSizes ? (
             <div className="bg-white/90 dark:bg-neutral-900/90 backdrop-blur-xl rounded-2xl p-2.5 sm:p-3 flex gap-1.5 sm:gap-2 justify-center flex-wrap shadow-xl shadow-black/5" onClick={(e) => e.preventDefault()}>
               {availableSizes.length > 0 ? availableSizes.map((size) => (
