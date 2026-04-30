@@ -1,11 +1,9 @@
 'use client';
 import { MessageCircle } from 'lucide-react';
-
-const WHATSAPP_NUMBER = '910000000000'; // Replace with actual WhatsApp business number
-const DEFAULT_MESSAGE = 'Hi! I have a question about a product on SoleVault.';
+import { WHATSAPP_NUMBER, WHATSAPP_DEFAULT_MESSAGE } from '@/lib/constants';
 
 export default function WhatsAppButton() {
-  const href = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(DEFAULT_MESSAGE)}`;
+  const href = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_DEFAULT_MESSAGE)}`;
 
   return (
     <a

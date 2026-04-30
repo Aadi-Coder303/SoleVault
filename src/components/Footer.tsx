@@ -1,8 +1,40 @@
 'use client';
-
+import { useState } from 'react';
 import Link from 'next/link';
 
 export default function Footer() {
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+
+  const handleSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) return;
+
+    setLoading(true);
+    try {
+      const res = await fetch('/api/newsletter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setSuccess(true);
+        setEmail('');
+        setTimeout(() => setSuccess(false), 5000);
+      } else {
+        alert(data.error || 'Failed to subscribe');
+      }
+    } catch (err) {
+      alert('An error occurred. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <footer className="bg-neutral-950 text-white py-16 mt-auto">
       <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-10">
@@ -47,16 +79,26 @@ export default function Footer() {
         <div>
           <h4 className="font-bold uppercase tracking-wide mb-5 text-sm">Stay Updated</h4>
           <p className="text-sm text-neutral-400 mb-4">Get early access to exclusive drops.</p>
-          <div className="flex">
-            <input 
-              type="email" 
-              placeholder="Email address" 
-              className="bg-white/5 border border-white/10 px-4 py-2.5 w-full text-sm focus:outline-none focus:border-[#E63946] text-white placeholder:text-neutral-500 transition-colors" 
-            />
-            <button className="bg-[#E63946] text-white px-5 py-2.5 text-sm font-bold uppercase tracking-wider hover:bg-white hover:text-black transition-all duration-200 btn-press shrink-0">
-              Join
-            </button>
-          </div>
+          <form onSubmit={handleSubscribe} className="flex flex-col gap-2">
+            <div className="flex">
+              <input 
+                type="email" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Email address" 
+                required
+                className="bg-white/5 border border-white/10 px-4 py-2.5 w-full text-sm focus:outline-none focus:border-[#E63946] text-white placeholder:text-neutral-500 transition-colors" 
+              />
+              <button 
+                type="submit"
+                disabled={loading || success}
+                className="bg-[#E63946] text-white px-5 py-2.5 text-sm font-bold uppercase tracking-wider hover:bg-white hover:text-black transition-all duration-200 btn-press shrink-0 disabled:opacity-50"
+              >
+                {loading ? '...' : success ? '✓' : 'Join'}
+              </button>
+            </div>
+            {success && <p className="text-[10px] text-green-400 font-bold uppercase tracking-widest animate-fade-in">Thanks for subscribing!</p>}
+          </form>
         </div>
       </div>
       
