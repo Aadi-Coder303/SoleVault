@@ -121,17 +121,24 @@ export default function ProductClient({ product, colorVariants = [] }: { product
       </div>
 
       {/* Main Layout - Image & Actions */}
-      <div className="w-full flex flex-col lg:flex-row gap-12 lg:gap-20 max-w-6xl items-start justify-center">
+      <div className="w-full flex flex-col lg:flex-row gap-12 lg:gap-16 max-w-[1400px] items-start justify-center">
         
-        {/* Left: Image Gallery */}
-        <div className="w-full lg:w-1/2 flex justify-center">
-          <div className="w-full max-w-md rounded-3xl overflow-hidden bg-neutral-50 dark:bg-neutral-900/50 p-4">
+        {/* Left: Image Gallery (Enlarged) */}
+        <div className="w-full lg:w-[60%] flex justify-center">
+          <div className="w-full rounded-3xl overflow-hidden bg-neutral-50 dark:bg-neutral-900/50 p-2 sm:p-6">
             <ImageGallery images={galleryImages} altText={product.name} />
           </div>
         </div>
 
         {/* Right: Info Stack */}
-        <div className="w-full lg:w-[40%] flex flex-col">
+        <div className="w-full lg:w-[40%] max-w-md flex flex-col">
+
+        {/* Description (Moved Up & Resized) */}
+        <div className="mb-8">
+          <p className="text-neutral-600 dark:text-neutral-400 text-sm sm:text-base leading-relaxed whitespace-pre-wrap font-light">
+            {product.description || 'No description available for this product.'}
+          </p>
+        </div>
 
         {/* Color Variants */}
         {colorVariants.length > 0 && (
@@ -196,7 +203,7 @@ export default function ProductClient({ product, colorVariants = [] }: { product
         </div>
 
         {/* Trust Badges - Minimal */}
-        <div className="grid grid-cols-3 gap-4 mb-10 pt-8 border-t border-neutral-100 dark:border-neutral-800">
+        <div className="grid grid-cols-3 gap-4 mb-4 pt-8 border-t border-neutral-100 dark:border-neutral-800">
           {[
             { icon: ShieldCheck, label: 'Authentic' },
             { icon: Truck, label: 'Fast Ship' },
@@ -209,14 +216,6 @@ export default function ProductClient({ product, colorVariants = [] }: { product
               <span className="text-[9px] font-medium uppercase tracking-[0.2em] text-neutral-500">{label}</span>
             </div>
           ))}
-        </div>
-
-        {/* Description */}
-        <div className="pt-2">
-          <h3 className="font-medium mb-3 text-xs uppercase tracking-widest text-neutral-400">Details</h3>
-          <p className="text-neutral-600 dark:text-neutral-400 text-sm leading-relaxed whitespace-pre-wrap font-light">
-            {product.description || 'No description available for this product.'}
-          </p>
         </div>
 
         {/* WhatsApp CTA */}

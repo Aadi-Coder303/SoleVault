@@ -31,91 +31,84 @@ export default function HeroSection() {
   }, []);
 
   return (
-    <section className="relative w-full min-h-[90vh] bg-neutral-950 flex items-center justify-center overflow-hidden">
+    <section className="relative w-full h-[90vh] min-h-[600px] flex items-center justify-center overflow-hidden bg-neutral-950">
       
-      {/* Rotating Background Images */}
+      {/* Editorial Background Images */}
       {HERO_BACKGROUNDS.map((url, i) => (
         <div
           key={url}
-          className="absolute inset-0 bg-cover bg-center transition-all duration-[1200ms] ease-in-out"
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-all duration-[2000ms] ease-out-expo"
           style={{
             backgroundImage: `url('${url}')`,
-            opacity: bgIndex === i ? (isFading ? 0 : 0.35) : 0,
-            transform: bgIndex === i ? 'scale(1.05)' : 'scale(1.12)',
+            opacity: bgIndex === i ? (isFading ? 0 : 1) : 0,
+            transform: bgIndex === i ? 'scale(1.02)' : 'scale(1.08)',
           }}
         />
       ))}
 
-      {/* Grain texture overlay */}
-      <div className="absolute inset-0 opacity-[0.03] mix-blend-overlay pointer-events-none" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")` }} />
-
-      {/* Animated gradient orbs */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full bg-[#E63946]/20 blur-[120px] animate-pulse" />
-        <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] rounded-full bg-white/5 blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
-      </div>
-
-      {/* Grid lines */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:60px_60px] pointer-events-none" />
+      {/* Elegant Dark Gradient Overlays for Readability */}
+      <div className="absolute inset-0 bg-black/20 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/40 pointer-events-none" />
 
       {/* Content */}
-      <div className="relative z-10 text-center px-4 max-w-4xl mx-auto">
+      <div className="relative z-10 text-center px-4 max-w-5xl mx-auto flex flex-col items-center mt-20">
+        
         <div
-          className="transition-all duration-700 ease-out"
-          style={{ opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(32px)' }}
+          className="transition-all duration-1000 ease-out"
+          style={{ opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(24px)' }}
         >
-          <span className="inline-block text-[#E63946] text-xs font-bold uppercase tracking-[0.3em] mb-6 border border-[#E63946]/30 px-4 py-1.5 rounded-sm">
-            100% Authentic • India&apos;s Premium Resale
+          <span className="inline-block text-white text-[10px] sm:text-xs font-semibold uppercase tracking-[0.4em] mb-8 px-4 py-1.5 border border-white/20 rounded-full backdrop-blur-sm">
+            India's Premium Destination
           </span>
         </div>
 
         <div
-          className="transition-all duration-700 ease-out delay-100"
-          style={{ opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(32px)', transitionDelay: '100ms' }}
+          className="transition-all duration-1000 ease-out delay-150"
+          style={{ opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(24px)', transitionDelay: '150ms' }}
         >
-          <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tight text-white mb-6 uppercase leading-none">
-            Step Into
-            <br />
-            <span className="text-[#E63946]">Greatness</span>
+          <h1 className="text-5xl sm:text-6xl md:text-8xl lg:text-[7rem] font-serif font-normal tracking-tight text-white mb-6 leading-[1.1]">
+            The Curated <br className="hidden sm:block" />
+            <span className="italic opacity-90">Collection.</span>
           </h1>
         </div>
 
         <div
-          className="transition-all duration-700 ease-out"
-          style={{ opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(32px)', transitionDelay: '200ms' }}
+          className="transition-all duration-1000 ease-out"
+          style={{ opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(24px)', transitionDelay: '300ms' }}
         >
-          <p className="text-base md:text-lg text-neutral-400 mb-10 max-w-xl mx-auto leading-relaxed">
-            Exclusive sneakers sourced from official drops. Verified authentic, delivered to your door anywhere in India.
+          <p className="text-sm md:text-base text-neutral-300 mb-12 max-w-lg mx-auto leading-relaxed font-light tracking-wide">
+            Exclusive sneakers sourced globally. Verified authentic, delivered seamlessly to your door.
           </p>
         </div>
 
         <div
           className="flex flex-col sm:flex-row gap-4 justify-center"
-          style={{ opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(32px)', transitionDelay: '300ms', transition: 'all 0.7s ease-out' }}
+          style={{ opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(24px)', transitionDelay: '450ms', transition: 'all 1s ease-out' }}
         >
           <Link
             href="/products"
-            className="group inline-flex items-center gap-2 bg-[#E63946] text-white px-8 py-4 font-bold uppercase tracking-wider hover:bg-white hover:text-black transition-all duration-300 shadow-lg shadow-[#E63946]/30"
+            className="group inline-flex items-center justify-center gap-2 bg-white text-black px-10 py-4 rounded-full font-medium uppercase tracking-[0.2em] text-xs hover:bg-neutral-200 transition-all duration-300 shadow-xl"
           >
-            Shop Now
-            <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+            Explore Now
+            <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
           </Link>
           <Link
             href="/authenticity"
-            className="inline-flex items-center gap-2 border border-white/20 text-white px-8 py-4 font-bold uppercase tracking-wider hover:border-white hover:bg-white/5 transition-all duration-300"
+            className="inline-flex items-center justify-center gap-2 bg-transparent border border-white/30 text-white px-10 py-4 rounded-full font-medium uppercase tracking-[0.2em] text-xs hover:bg-white/10 hover:border-white transition-all duration-300 backdrop-blur-sm"
           >
-            Authenticity Guarantee
+            Authenticity
           </Link>
         </div>
       </div>
 
-      {/* Background indicator dots */}
-      <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex items-center gap-2 z-20">
+      {/* Minimal Background Indicator Dots */}
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-3 z-20">
         {HERO_BACKGROUNDS.map((_, i) => (
           <button
             key={i}
             onClick={() => { setIsFading(true); setTimeout(() => { setBgIndex(i); setIsFading(false); }, 400); }}
-            className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${bgIndex === i ? 'bg-[#E63946] w-4' : 'bg-white/30 hover:bg-white/50'}`}
+            className={`w-1.5 h-1.5 rounded-full transition-all duration-500 ${bgIndex === i ? 'bg-white w-6' : 'bg-white/40 hover:bg-white/70'}`}
           />
         ))}
       </div>
