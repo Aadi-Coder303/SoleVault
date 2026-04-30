@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import prisma from '@/lib/prisma';
+import { createClient } from '@/utils/supabase/server';
 
 interface CartItem {
   productId: string;
@@ -12,11 +13,19 @@ interface CartItem {
 
 export async function POST(req: Request) {
   try {
+    const supabase = await createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+
     const body = await req.json();
     const { amount, productinfo, firstname, email, phone, address, items, couponCode, discount } = body;
 
     if (!productinfo || !firstname || !email || !items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: 'Missing required payment fields or empty cart' }, { status: 400 });
+    }
+
+    // Security: If user is logged in, ensure they are not spoofing another email
+    if (session?.user && session.user.email !== email) {
+      return NextResponse.json({ error: 'Identity mismatch. Please use your account email.' }, { status: 403 });
     }
 
     // --- SERVER-SIDE PRICE CALCULATION ---

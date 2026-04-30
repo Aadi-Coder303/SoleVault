@@ -1,12 +1,21 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { createClient } from '@/utils/supabase/server';
 
 export async function POST(req: Request) {
   try {
+    const supabase = await createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+
     const { fullName, email, phone, address, items, codRequest, couponCode } = await req.json();
 
     if (!fullName || !email || !items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: 'Missing required fields or empty cart' }, { status: 400 });
+    }
+
+    // Security: If user is logged in, ensure they are not spoofing another email
+    if (session?.user && session.user.email !== email) {
+      return NextResponse.json({ error: 'Identity mismatch. Please use your account email.' }, { status: 403 });
     }
 
     // --- SERVER-SIDE PRICE CALCULATION ---
