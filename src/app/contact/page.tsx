@@ -1,9 +1,40 @@
 'use client';
 
+import { useState } from 'react';
 import toast from 'react-hot-toast';
-import { Send, Mail, Clock } from 'lucide-react';
+import { Send, Clock, Loader2 } from 'lucide-react';
 
 export default function ContactPage() {
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    const formData = new FormData(e.currentTarget);
+    const data = Object.fromEntries(formData.entries());
+
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (res.ok) {
+        toast.success('Message sent! We will get back to you soon.');
+        (e.target as HTMLFormElement).reset();
+      } else {
+        const err = await res.json();
+        toast.error(err.error || 'Failed to send message.');
+      }
+    } catch (error) {
+      toast.error('An error occurred. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <main className="container mx-auto px-4 py-16 max-w-4xl min-h-[60vh]">
       <div className="text-center mb-12">
@@ -21,13 +52,6 @@ export default function ContactPage() {
           
           <div className="space-y-4">
             <div className="flex items-center gap-3 text-neutral-600 p-4 bg-neutral-50 border border-neutral-100 hover:border-neutral-200 transition-colors">
-              <Mail size={18} className="text-[#E63946] shrink-0" />
-              <div>
-                <p className="font-bold text-sm text-black">Email</p>
-                <p className="text-sm">support@solevault.com</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 text-neutral-600 p-4 bg-neutral-50 border border-neutral-100 hover:border-neutral-200 transition-colors">
               <Clock size={18} className="text-[#E63946] shrink-0" />
               <div>
                 <p className="font-bold text-sm text-black">Hours</p>
@@ -38,26 +62,36 @@ export default function ContactPage() {
         </div>
 
         <div>
-          <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); toast.success('Message sent!'); }}>
+          <form className="space-y-4 relative" onSubmit={handleSubmit}>
+            {/* Honeypot field (hidden from users, filled by bots) */}
+            <div className="absolute opacity-0 -z-10" aria-hidden="true">
+              <label htmlFor="a_password">Leave this field blank</label>
+              <input type="text" name="a_password" id="a_password" tabIndex={-1} autoComplete="off" />
+            </div>
+
             <div>
               <label className="block text-sm font-bold uppercase tracking-wide mb-2">Name</label>
-              <input type="text" required className="w-full border border-neutral-300 p-3 focus:outline-none focus:border-[#E63946] transition-colors" />
+              <input type="text" name="name" required className="w-full border border-neutral-300 p-3 focus:outline-none focus:border-[#E63946] transition-colors" />
             </div>
             <div>
               <label className="block text-sm font-bold uppercase tracking-wide mb-2">Email</label>
-              <input type="email" required className="w-full border border-neutral-300 p-3 focus:outline-none focus:border-[#E63946] transition-colors" />
+              <input type="email" name="email" required className="w-full border border-neutral-300 p-3 focus:outline-none focus:border-[#E63946] transition-colors" />
             </div>
             <div>
               <label className="block text-sm font-bold uppercase tracking-wide mb-2">Order Number (Optional)</label>
-              <input type="text" className="w-full border border-neutral-300 p-3 focus:outline-none focus:border-[#E63946] transition-colors" />
+              <input type="text" name="orderNumber" className="w-full border border-neutral-300 p-3 focus:outline-none focus:border-[#E63946] transition-colors" />
             </div>
             <div>
               <label className="block text-sm font-bold uppercase tracking-wide mb-2">Message</label>
-              <textarea rows={5} required className="w-full border border-neutral-300 p-3 focus:outline-none focus:border-[#E63946] transition-colors resize-none"></textarea>
+              <textarea name="message" rows={5} required className="w-full border border-neutral-300 p-3 focus:outline-none focus:border-[#E63946] transition-colors resize-none"></textarea>
             </div>
-            <button type="submit" className="w-full bg-black text-white font-bold uppercase tracking-wider py-4 hover:bg-[#E63946] transition-all duration-200 flex items-center justify-center gap-2 btn-press">
-              <Send size={16} />
-              Send Message
+            <button 
+              type="submit" 
+              disabled={loading}
+              className="w-full bg-black text-white font-bold uppercase tracking-wider py-4 hover:bg-[#E63946] transition-all duration-200 flex items-center justify-center gap-2 btn-press disabled:opacity-70"
+            >
+              {loading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+              {loading ? 'Sending...' : 'Send Message'}
             </button>
           </form>
         </div>

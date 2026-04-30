@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Star, Heart } from 'lucide-react';
+import { Heart } from 'lucide-react';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { useWishlistStore } from '@/store/useWishlistStore';
 import { useCartStore } from '@/store/useCartStore';
@@ -16,11 +16,9 @@ interface ProductCardProps {
   originalPrice?: number;
   imageUrl?: string;
   sizes?: Record<string, number | { stock: number; price: number }>;
-  rating?: number;
-  reviewCount?: number;
 }
 
-export default function ProductCard({ id, name, price, originalPrice, imageUrl, sizes, rating = 4.5, reviewCount = 12 }: ProductCardProps) {
+export default function ProductCard({ id, name, price, originalPrice, imageUrl, sizes }: ProductCardProps) {
   const { toggleItem, hasItem } = useWishlistStore();
   const { addItem } = useCartStore();
   const [mounted, setMounted] = useState(false);
@@ -174,11 +172,6 @@ export default function ProductCard({ id, name, price, originalPrice, imageUrl, 
 
       {/* Info Area */}
       <div className="pt-4 sm:pt-5 pb-2 flex flex-col gap-1 sm:gap-1.5 px-1 items-center text-center">
-        <div className="flex items-center gap-1 mb-0.5 text-neutral-400">
-          <Star size={10} className="fill-current sm:w-3 sm:h-3" />
-          <span className="text-[10px] sm:text-xs font-medium">{rating} ({reviewCount})</span>
-        </div>
-        
         <Link href={`/products/${id}`} className="w-full">
           <h3 className="font-serif font-normal text-sm sm:text-base text-neutral-900 dark:text-neutral-100 truncate w-full hover:text-neutral-500 transition-colors duration-200">{name}</h3>
         </Link>
