@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { createClient } from '@/utils/supabase/server';
 
 interface GokwikAddress {
   name?: string;
@@ -13,7 +14,20 @@ interface GokwikAddress {
 
 export async function POST(req: Request) {
   try {
-    const { phone, email } = await req.json();
+    const supabase = await createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session?.user) {
+      return NextResponse.json({ addresses: [], source: 'unauthorized' }, { status: 401 });
+    }
+
+    // Securely use the authenticated user's email and phone, ignore client payload
+    const email = session.user.email;
+    const phone = session.user.phone || session.user.user_metadata?.phone || session.user.user_metadata?.phone_number;
+
+    if (!phone) {
+      return NextResponse.json({ addresses: [], source: 'missing_phone' });
+    }
 
     const appId = process.env.GOKWIK_APP_ID;
     const appSecret = process.env.GOKWIK_APP_SECRET;

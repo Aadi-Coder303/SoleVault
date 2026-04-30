@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useRef } from 'react';
 
-const brands = ['NIKE', 'ADIDAS', 'JORDAN', 'NEW BALANCE', 'ASICS', 'PUMA', 'CONVERSE', 'VANS'];
+const brands = ['NIKE', 'ADIDAS', 'JORDAN', 'NEW BALANCE', 'ON RUNNING', 'PUMA', 'ANTA', 'SALOMON'];
 
 export default function BrandTicker() {
   return (

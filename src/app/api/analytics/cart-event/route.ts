@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { createClient } from '@/utils/supabase/server';
+import { OWNER_EMAILS } from '@/lib/constants';
 
 // POST: Log a cart add event
 export async function POST(req: Request) {
@@ -30,6 +32,12 @@ export async function POST(req: Request) {
 // GET: Fetch recent cart events (for dashboard)
 export async function GET() {
   try {
+    const supabase = await createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user?.email || !OWNER_EMAILS.includes(session.user.email)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const events = await prisma.cartEvent.findMany({
       orderBy: { createdAt: 'desc' },
       take: 50,

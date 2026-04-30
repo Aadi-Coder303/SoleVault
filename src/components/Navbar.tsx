@@ -1,14 +1,23 @@
 'use client';
 
 import Link from 'next/link';
-import { Search, Heart, ShoppingBag, Menu, User, LogOut, X, Package, LayoutDashboard, Moon, Sun } from 'lucide-react';
+import Image from 'next/image';
+import { Search, Heart, ShoppingBag, Menu, User, LogOut, X, Package, LayoutDashboard, Moon, Sun, Loader2 } from 'lucide-react';
 import { useCartStore } from '@/store/useCartStore';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
 import { OWNER_EMAILS } from '@/lib/constants';
 import { useTheme } from '@/components/ThemeProvider';
+
+interface Suggestion {
+  id: string;
+  name: string;
+  brand: string;
+  price: number;
+  image: string | null;
+}
 
 export default function Navbar() {
   const [user, setUser] = useState<SupabaseUser | null>(null);
@@ -21,6 +30,14 @@ export default function Navbar() {
   const router = useRouter();
   const supabase = createClient();
   const { theme, toggleTheme } = useTheme();
+
+  // Suggestion state
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [activeSuggestion, setActiveSuggestion] = useState(-1);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
 
   const isOwner = mounted && user?.email && OWNER_EMAILS.includes(user.email);
 
@@ -43,6 +60,46 @@ export default function Navbar() {
     };
   }, [supabase.auth]);
 
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const fetchSuggestions = useCallback(async (query: string) => {
+    if (query.trim().length < 2) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    setLoadingSuggestions(true);
+    try {
+      const res = await fetch(`/api/search-suggestions?q=${encodeURIComponent(query)}`);
+      const data = await res.json();
+      setSuggestions(data.suggestions || []);
+      setShowSuggestions(true);
+      setActiveSuggestion(-1);
+    } catch {
+      setSuggestions([]);
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  }, []);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setSearchQuery(val);
+
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => fetchSuggestions(val), 250);
+  };
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     setUser(null);
@@ -54,8 +111,136 @@ export default function Navbar() {
     e.preventDefault();
     if (searchQuery.trim()) {
       setShowSearch(false);
+      setShowSuggestions(false);
+      setSuggestions([]);
       router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
     }
+  };
+
+  const navigateToProduct = (id: string) => {
+    setShowSearch(false);
+    setShowSuggestions(false);
+    setSuggestions([]);
+    setSearchQuery('');
+    router.push(`/product/${id}`);
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+    if (!showSuggestions || suggestions.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActiveSuggestion((prev) => (prev < suggestions.length - 1 ? prev + 1 : 0));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveSuggestion((prev) => (prev > 0 ? prev - 1 : suggestions.length - 1));
+    } else if (e.key === 'Enter' && activeSuggestion >= 0) {
+      e.preventDefault();
+      navigateToProduct(suggestions[activeSuggestion].id);
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false);
+    }
+  };
+
+  const handleSelectSuggestion = (suggestion: Suggestion) => {
+    setSearchQuery(suggestion.name);
+    setShowSuggestions(false);
+    setSuggestions([]);
+    setShowSearch(false);
+    router.push(`/search?q=${encodeURIComponent(suggestion.name)}`);
+  };
+
+  const formatPrice = (price: number) =>
+    `₹${price.toLocaleString('en-IN')}`;
+
+  // ── Suggestion dropdown component ──
+  const SuggestionDropdown = () => {
+    if (!showSuggestions || (suggestions.length === 0 && !loadingSuggestions)) return null;
+
+    return (
+      <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 shadow-xl rounded-lg overflow-hidden z-[100] max-h-[360px] overflow-y-auto">
+        {loadingSuggestions ? (
+          <div className="flex items-center justify-center py-6 gap-2 text-neutral-400">
+            <Loader2 size={16} className="animate-spin" />
+            <span className="text-xs uppercase tracking-wider">Searching...</span>
+          </div>
+        ) : suggestions.length > 0 ? (
+          <>
+            {suggestions.map((s, idx) => (
+              <button
+                key={s.id}
+                onClick={() => handleSelectSuggestion(s)}
+                onMouseEnter={() => setActiveSuggestion(idx)}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors ${
+                  idx === activeSuggestion
+                    ? 'bg-neutral-100 dark:bg-neutral-800'
+                    : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/60'
+                }`}
+              >
+                {/* Thumbnail */}
+                <div className="relative w-10 h-10 flex-shrink-0 bg-neutral-100 dark:bg-neutral-800 rounded overflow-hidden">
+                  {s.image ? (
+                    <Image
+                      src={s.image}
+                      alt={s.name}
+                      fill
+                      className="object-cover"
+                      sizes="40px"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-neutral-300">
+                      <ShoppingBag size={16} />
+                    </div>
+                  )}
+                </div>
+
+                {/* Text */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-neutral-900 dark:text-white truncate leading-tight">
+                    {highlightMatch(s.name, searchQuery)}
+                  </p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-[11px] uppercase tracking-wider text-neutral-400 font-medium">{s.brand}</span>
+                    <span className="text-[11px] text-neutral-300 dark:text-neutral-600">•</span>
+                    <span className="text-[11px] font-bold text-[#E63946]">{formatPrice(s.price)}</span>
+                  </div>
+                </div>
+
+                {/* Arrow hint */}
+                <svg className="w-4 h-4 text-neutral-300 dark:text-neutral-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            ))}
+            {/* View all results link */}
+            <button
+              onClick={handleSearchSubmit as unknown as () => void}
+              className="w-full py-2.5 px-3 text-center text-xs font-bold uppercase tracking-wider text-[#E63946] hover:bg-[#E63946]/5 border-t border-neutral-100 dark:border-neutral-800 transition-colors"
+            >
+              View all results for &quot;{searchQuery}&quot;
+            </button>
+          </>
+        ) : null}
+      </div>
+    );
+  };
+
+  // Highlight matching text in suggestion names
+  const highlightMatch = (text: string, query: string) => {
+    if (!query.trim()) return text;
+    const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    const parts = text.split(regex);
+    return (
+      <>
+        {parts.map((part, i) =>
+          regex.test(part) ? (
+            <span key={i} className="text-[#E63946] font-semibold">{part}</span>
+          ) : (
+            <span key={i}>{part}</span>
+          )
+        )}
+      </>
+    );
   };
 
   // ── Owner: minimal navbar ──
@@ -121,9 +306,15 @@ export default function Navbar() {
             {mounted && theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
           </button>
 
-          <div className="relative">
+          <div className="relative" ref={searchContainerRef}>
             <button 
-              onClick={() => setShowSearch(!showSearch)} 
+              onClick={() => {
+                setShowSearch(!showSearch);
+                if (showSearch) {
+                  setShowSuggestions(false);
+                  setSuggestions([]);
+                }
+              }} 
               aria-label="Search" 
               className="hover:text-[#E63946] transition-colors mt-1"
             >
@@ -131,18 +322,44 @@ export default function Navbar() {
             </button>
             
             {showSearch && (
-              <div className="absolute top-8 right-0 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 p-2 shadow-lg w-64 md:w-80">
-                <form onSubmit={handleSearchSubmit} className="flex gap-2">
-                  <input 
-                    type="text" 
-                    autoFocus
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search for sneakers..." 
-                    className="w-full border border-neutral-300 dark:border-neutral-600 p-2 text-sm focus:outline-none focus:border-black dark:focus:border-white bg-white dark:bg-neutral-800 dark:text-white"
-                  />
-                  <button type="submit" className="bg-black dark:bg-white text-white dark:text-black px-3 text-xs font-bold uppercase hover:bg-[#E63946] dark:hover:bg-[#E63946] dark:hover:text-white">Go</button>
-                </form>
+              <div className="absolute top-10 right-0 w-[85vw] sm:w-80 md:w-96 z-[100]">
+                <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 p-2.5 shadow-xl rounded-lg">
+                  <form onSubmit={handleSearchSubmit} className="flex gap-2">
+                    <div className="relative flex-1">
+                      <input 
+                        type="text" 
+                        autoFocus
+                        value={searchQuery}
+                        onChange={handleSearchChange}
+                        onKeyDown={handleSearchKeyDown}
+                        onFocus={() => {
+                          if (suggestions.length > 0) setShowSuggestions(true);
+                        }}
+                        placeholder="Search for sneakers..." 
+                        className="w-full border border-neutral-200 dark:border-neutral-600 p-2.5 pl-9 text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-[#E63946]/30 focus:border-[#E63946] bg-white dark:bg-neutral-800 dark:text-white transition-all"
+                        autoComplete="off"
+                      />
+                      <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+                      {searchQuery && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSearchQuery('');
+                            setSuggestions([]);
+                            setShowSuggestions(false);
+                          }}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+                        >
+                          <X size={14} />
+                        </button>
+                      )}
+                    </div>
+                    <button type="submit" className="bg-black dark:bg-white text-white dark:text-black px-4 text-xs font-bold uppercase rounded-md hover:bg-[#E63946] dark:hover:bg-[#E63946] dark:hover:text-white transition-colors">
+                      Go
+                    </button>
+                  </form>
+                </div>
+                <SuggestionDropdown />
               </div>
             )}
           </div>

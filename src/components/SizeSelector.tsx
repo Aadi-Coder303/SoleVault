@@ -36,29 +36,29 @@ export default function SizeSelector({ sizes, onSelect }: SizeSelectorProps) {
         <span className="font-semibold">Select Size (UK)</span>
       </div>
 
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
         {sizes.map((size) => (
           <button
             key={size.id}
             disabled={!size.available}
             onClick={() => handleSelect(size.id, size.available, size.price)}
             className={twMerge(
-              "relative py-2 text-sm font-medium border transition-colors min-h-[48px] flex flex-col items-center justify-center gap-0.5",
+              "relative py-3 px-2 text-sm font-medium transition-all min-h-[48px] flex flex-col items-center justify-center gap-0.5 rounded-full",
               size.available 
-                ? "border-neutral-200 dark:border-neutral-700 hover:border-black dark:hover:border-white cursor-pointer bg-white dark:bg-neutral-900 text-black dark:text-white" 
-                : "border-neutral-100 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50 text-neutral-400 cursor-not-allowed line-through",
-              selectedSize === size.id && "bg-black dark:bg-white text-white dark:text-black border-black dark:border-white hover:border-black dark:hover:border-white"
+                ? "border border-neutral-200 dark:border-neutral-700 hover:border-neutral-400 dark:hover:border-neutral-500 cursor-pointer bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white" 
+                : "border border-neutral-100 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50 text-neutral-300 dark:text-neutral-600 cursor-not-allowed line-through",
+              selectedSize === size.id && "bg-neutral-900 dark:bg-neutral-100 text-white dark:text-black border-neutral-900 dark:border-white hover:border-neutral-900 dark:hover:border-white shadow-md"
             )}
           >
             <span>UK {size.label}</span>
             {size.available && hasVaryingPrices && size.price && (
-              <span className={twMerge("text-[9px] font-semibold", selectedSize === size.id ? "text-neutral-300" : "text-neutral-400")}>
+              <span className={twMerge("text-[9px] font-semibold tracking-wider", selectedSize === size.id ? "text-neutral-300 dark:text-neutral-600" : "text-neutral-400")}>
                 ₹{size.price.toLocaleString('en-IN')}
               </span>
             )}
             {size.available && size.stock && size.stock <= 3 && (
-              <span className="absolute -top-2 -right-2 bg-teal-600 text-white text-[10px] px-1.5 rounded-sm">
-                Few Left
+              <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-[9px] px-1.5 py-0.5 rounded-full font-bold shadow-sm">
+                Left
               </span>
             )}
           </button>

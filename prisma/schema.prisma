@@ -58,6 +58,7 @@ model UserData {
   userId    String   @unique // Supabase auth user ID
   cart      Json     @default("[]")
   wishlist  Json     @default("[]")
+  addresses Json     @default("[]")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

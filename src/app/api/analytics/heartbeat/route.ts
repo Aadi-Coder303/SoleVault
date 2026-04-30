@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { createClient } from '@/utils/supabase/server';
+import { OWNER_EMAILS } from '@/lib/constants';
 
 // POST: Send heartbeat (upsert visitor)
 export async function POST(req: Request) {
@@ -26,6 +28,12 @@ export async function POST(req: Request) {
 // GET: Count active visitors (seen within last 2 minutes)
 export async function GET() {
   try {
+    const supabase = await createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user?.email || !OWNER_EMAILS.includes(session.user.email)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
 
     // Clean up stale visitors (older than 10 minutes)

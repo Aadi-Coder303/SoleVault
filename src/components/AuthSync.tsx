@@ -36,7 +36,8 @@ export default function AuthSync() {
       }
 
       if (event === 'SIGNED_OUT') {
-        useCartStore.getState().clearCart();
+        // Don't clear cart on logout — preserve items in localStorage
+        // so the buyer doesn't lose their bag mid-checkout
       }
     });
 

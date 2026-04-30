@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Loader2, Plus, Minus, Edit2, RefreshCw, Trash2, ToggleLeft, ToggleRight, Tag, Eye, ShoppingCart, Copy, ClipboardCheck, Package, Truck } from 'lucide-react';
+import { Loader2, Plus, Minus, Edit2, RefreshCw, Trash2, ToggleLeft, ToggleRight, Tag, Eye, ShoppingCart, Copy, ClipboardCheck, Package, Truck, Link2, PenLine, X, ArrowUp, ArrowDown, ImagePlus } from 'lucide-react';
 import { twMerge } from 'tailwind-merge';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -65,6 +65,9 @@ export default function DashboardPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({ name: '', brand: '', price: '', description: '', imageUrl: '', category: 'Men' });
+  const [addMode, setAddMode] = useState<'import' | 'manual'>('import');
+  const [manualImages, setManualImages] = useState<string[]>([]);
+  const [newImageUrl, setNewImageUrl] = useState('');
   const [sizes, setSizes] = useState<Record<string, number | { stock: number; price: number }>>({});
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
 
@@ -83,6 +86,10 @@ export default function DashboardPage() {
   const [isSourcedItem, setIsSourcedItem] = useState(false);
   const [sourcedDeliveryEstimate, setSourcedDeliveryEstimate] = useState('');
   const [sourcedNote, setSourcedNote] = useState('');
+
+  // Dashboard Filters
+  const [searchTerm, setSearchTerm] = useState('');
+  const [brandFilter, setBrandFilter] = useState('All');
 
   const fetchProducts = async () => {
     setIsLoadingProducts(true);
@@ -153,11 +160,49 @@ export default function DashboardPage() {
       const res = await fetch('/api/scrape', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url }) });
       const result = await res.json();
       if (res.ok && result.success) {
-        setFormData({ ...formData, name: result.data.title || '', brand: result.data.brand || '', description: result.data.description || '', imageUrl: (result.data.images?.length > 0) ? result.data.images.slice(0, 4).join(',') : (result.data.image || '') });
-        toast.success('Data fetched! Review details and set sizes.');
+        const imgUrl = (result.data.images?.length > 0) ? result.data.images.slice(0, 4).join(',') : (result.data.image || '');
+        const scrapedPrice = result.data.price ? String(result.data.price) : '';
+        setFormData({
+          ...formData,
+          name: result.data.title || '',
+          brand: result.data.brand || '',
+          description: result.data.description || '',
+          imageUrl: imgUrl,
+          price: scrapedPrice || formData.price,
+        });
+        toast.success(`Data fetched!${scrapedPrice ? ` Price: ₹${scrapedPrice}` : ' Set price manually.'} Review details and set sizes.`);
       } else { toast.error(result.error || 'Failed to fetch data.'); }
     } catch { toast.error('Error fetching data.'); }
     finally { setIsScraping(false); }
+  };
+
+  // Manual image management helpers
+  const handleAddManualImage = () => {
+    const trimmed = newImageUrl.trim();
+    if (!trimmed) return;
+    setManualImages(prev => [...prev, trimmed]);
+    setNewImageUrl('');
+    // Sync to formData
+    setFormData(prev => ({ ...prev, imageUrl: [...manualImages, trimmed].join(',') }));
+  };
+
+  const handleRemoveManualImage = (idx: number) => {
+    setManualImages(prev => {
+      const next = prev.filter((_, i) => i !== idx);
+      setFormData(f => ({ ...f, imageUrl: next.join(',') }));
+      return next;
+    });
+  };
+
+  const handleMoveImage = (idx: number, dir: 'up' | 'down') => {
+    setManualImages(prev => {
+      const next = [...prev];
+      const swap = dir === 'up' ? idx - 1 : idx + 1;
+      if (swap < 0 || swap >= next.length) return prev;
+      [next[idx], next[swap]] = [next[swap], next[idx]];
+      setFormData(f => ({ ...f, imageUrl: next.join(',') }));
+      return next;
+    });
   };
 
   const handleSizeChange = (size: string, delta: number) => {
@@ -201,6 +246,7 @@ export default function DashboardPage() {
       setEditingId(null); setUrl(''); setFormData({ name: '', brand: '', price: '', description: '', imageUrl: '', category: 'Men' }); setSizes({});
       setIsColorVariant(false); setColorName(''); setParentId(null); setPerSizePricing(false);
       setIsSourcedItem(false); setSourcedDeliveryEstimate(''); setSourcedNote('');
+      setManualImages([]); setNewImageUrl('');
       fetchProducts();
     } catch { toast.error('Error saving product.'); }
     finally { setIsSaving(false); }
@@ -230,6 +276,7 @@ export default function DashboardPage() {
     setEditingId(null); setFormData({ name: '', brand: '', price: '', description: '', imageUrl: '', category: 'Men' }); setSizes({});
     setIsColorVariant(false); setColorName(''); setParentId(null); setPerSizePricing(false);
     setIsSourcedItem(false); setSourcedDeliveryEstimate(''); setSourcedNote('');
+    setManualImages([]); setNewImageUrl('');
   };
 
   const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
@@ -259,8 +306,16 @@ export default function DashboardPage() {
   const shippedOrders = orders.filter(o => ['shipped', 'delivered'].includes(o.status));
   const totalRevenue = orders.filter(o => ['paid', 'confirmed', 'shipped', 'delivered'].includes(o.status)).reduce((s, o) => s + o.amount, 0);
   const activeCoupons = coupons.filter(c => c.isActive).length;
-  const sourcedProducts = products.filter(p => p.isSourced);
-  const inStockProducts = products.filter(p => !p.isSourced);
+  
+  const uniqueBrands = Array.from(new Set(products.map(p => p.brand).filter(Boolean))).sort();
+  const filteredProducts = products.filter(p => {
+    const matchesSearch = !searchTerm || p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.brand.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesBrand = brandFilter === 'All' || p.brand === brandFilter;
+    return matchesSearch && matchesBrand;
+  });
+  
+  const sourcedProducts = filteredProducts.filter(p => p.isSourced);
+  const inStockProducts = filteredProducts.filter(p => !p.isSourced);
 
   // Coupon handlers
   const handleSaveCoupon = async (e: React.FormEvent) => {
@@ -483,6 +538,37 @@ export default function DashboardPage() {
           ))}
         </div>
 
+        {/* Filters for Inventory & Sourced */}
+        {(activeTab === 'inventory' || activeTab === 'sourced') && (
+          <div className="flex flex-col sm:flex-row gap-4 mb-6 bg-white p-4 border border-neutral-200">
+            <input 
+              type="text" 
+              placeholder="Search by name or brand..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="flex-1 border border-neutral-300 p-2.5 text-sm focus:outline-none focus:border-black"
+            />
+            <select 
+              value={brandFilter} 
+              onChange={(e) => setBrandFilter(e.target.value)}
+              className="border border-neutral-300 p-2.5 text-sm focus:outline-none focus:border-black min-w-[200px]"
+            >
+              <option value="All">All Brands</option>
+              {uniqueBrands.map(brand => (
+                <option key={brand as string} value={brand as string}>{brand as string}</option>
+              ))}
+            </select>
+            {(searchTerm || brandFilter !== 'All') && (
+              <button 
+                onClick={() => { setSearchTerm(''); setBrandFilter('All'); }}
+                className="text-xs font-bold uppercase underline text-neutral-500 hover:text-red-500 px-2"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Tab Content */}
         {activeTab === 'pending' && renderOrders(pendingOrders, 'pending')}
         {activeTab === 'confirmed' && renderOrders(confirmedOrders, 'confirmed')}
@@ -492,14 +578,83 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="flex flex-col gap-8">
               {!editingId && (
-                <div className="bg-white p-6 border border-neutral-200">
-                  <h2 className="text-lg font-bold uppercase tracking-wide mb-4">Auto-Import Product</h2>
-                  <p className="text-sm text-neutral-500 mb-4">Paste a link from an official brand store to auto-fill details.</p>
-                  <div className="flex gap-2">
-                    <input type="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://www.nike.com/t/..." className="flex-1 border border-neutral-300 p-3 text-sm focus:outline-none focus:border-black" />
-                    <button onClick={handleScrape} disabled={isScraping} className={twMerge("bg-black text-white px-4 font-bold uppercase text-sm tracking-wider transition-colors flex items-center justify-center", isScraping ? "opacity-70" : "hover:bg-[#E63946]")}>
-                      {isScraping ? <Loader2 size={18} className="animate-spin" /> : 'Fetch'}
+                <div className="bg-white border border-neutral-200">
+                  {/* Mode Switcher */}
+                  <div className="flex border-b border-neutral-200">
+                    <button
+                      type="button"
+                      onClick={() => setAddMode('import')}
+                      className={twMerge("flex-1 flex items-center justify-center gap-2 py-3 font-bold uppercase text-xs tracking-wide transition-colors",
+                        addMode === 'import' ? "bg-black text-white" : "bg-neutral-50 text-neutral-500 hover:text-black"
+                      )}
+                    >
+                      <Link2 size={14} /> Import from URL
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => setAddMode('manual')}
+                      className={twMerge("flex-1 flex items-center justify-center gap-2 py-3 font-bold uppercase text-xs tracking-wide transition-colors",
+                        addMode === 'manual' ? "bg-black text-white" : "bg-neutral-50 text-neutral-500 hover:text-black"
+                      )}
+                    >
+                      <PenLine size={14} /> Manual Add
+                    </button>
+                  </div>
+
+                  <div className="p-6">
+                    {addMode === 'import' ? (
+                      <>
+                        <p className="text-sm text-neutral-500 mb-4">Paste a link from any brand store to auto-fill name, brand, images &amp; price.</p>
+                        <div className="flex gap-2">
+                          <input type="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://www.nike.com/t/..." className="flex-1 border border-neutral-300 p-3 text-sm focus:outline-none focus:border-black" />
+                          <button onClick={handleScrape} disabled={isScraping} className={twMerge("bg-[#E63946] text-white px-5 font-bold uppercase text-sm tracking-wider transition-colors flex items-center justify-center gap-2", isScraping ? "opacity-70" : "hover:bg-black")}>
+                            {isScraping ? <Loader2 size={16} className="animate-spin" /> : <><Link2 size={14} /> Fetch</>}
+                          </button>
+                        </div>
+                        <p className="text-[10px] text-neutral-400 mt-2">Works with Nike, Adidas, New Balance and most product pages. All fields are editable after import.</p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-sm text-neutral-500 mb-4">Manually fill in all product details and add photos below.</p>
+                        {/* Manual Image Manager */}
+                        <div className="border border-dashed border-neutral-300 rounded p-4 bg-neutral-50">
+                          <label className="block text-xs font-bold uppercase tracking-wide mb-3 flex items-center gap-1.5"><ImagePlus size={14} /> Product Photos</label>
+                          {manualImages.length > 0 && (
+                            <div className="grid grid-cols-3 gap-2 mb-3">
+                              {manualImages.map((img, idx) => (
+                                <div key={idx} className="relative group border border-neutral-200 bg-white">
+                                  <img src={img} alt={`Photo ${idx + 1}`} className="w-full h-24 object-cover" />
+                                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                                    {idx > 0 && (
+                                      <button type="button" onClick={() => handleMoveImage(idx, 'up')} className="p-1 bg-white/90 rounded hover:bg-white" title="Move left"><ArrowUp size={12} /></button>
+                                    )}
+                                    {idx < manualImages.length - 1 && (
+                                      <button type="button" onClick={() => handleMoveImage(idx, 'down')} className="p-1 bg-white/90 rounded hover:bg-white" title="Move right"><ArrowDown size={12} /></button>
+                                    )}
+                                    <button type="button" onClick={() => handleRemoveManualImage(idx)} className="p-1 bg-red-500 text-white rounded hover:bg-red-600" title="Remove"><X size={12} /></button>
+                                  </div>
+                                  {idx === 0 && <span className="absolute top-1 left-1 bg-[#E63946] text-white text-[8px] font-bold uppercase px-1.5 py-0.5">Main</span>}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          <div className="flex gap-2">
+                            <input
+                              type="url"
+                              value={newImageUrl}
+                              onChange={(e) => setNewImageUrl(e.target.value)}
+                              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddManualImage(); } }}
+                              placeholder="Paste image URL and press Enter or click Add"
+                              className="flex-1 border border-neutral-300 p-2.5 text-sm focus:outline-none focus:border-black bg-white"
+                            />
+                            <button type="button" onClick={handleAddManualImage} className="bg-black text-white px-4 text-xs font-bold uppercase tracking-wide hover:bg-[#E63946] transition-colors flex items-center gap-1.5">
+                              <Plus size={14} /> Add
+                            </button>
+                          </div>
+                          <p className="text-[10px] text-neutral-400 mt-2">First image will be the main product photo. Hover to reorder or remove.</p>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               )}
@@ -514,8 +669,19 @@ export default function DashboardPage() {
                   <div><label className="block text-sm font-semibold mb-1">Brand</label><input type="text" value={formData.brand} onChange={(e) => setFormData({...formData, brand: e.target.value})} className="w-full border border-neutral-300 p-3 text-sm focus:outline-none focus:border-black" /></div>
                   <div><label className="block text-sm font-semibold mb-1">Price (₹)</label><input type="number" value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value})} className="w-full border border-neutral-300 p-3 text-sm focus:outline-none focus:border-black" required /></div>
                 </div>
-                <div><label className="block text-sm font-semibold mb-1">Image URL</label><input type="url" value={formData.imageUrl} onChange={(e) => setFormData({...formData, imageUrl: e.target.value})} className="w-full border border-neutral-300 p-3 text-sm focus:outline-none focus:border-black" />
-                  {formData.imageUrl && <div className="mt-3 w-32 h-32 bg-neutral-100 border overflow-hidden"><img src={formData.imageUrl.split(',')[0].trim()} alt="Preview" className="w-full h-full object-cover" /></div>}
+                <div>
+                  <label className="block text-sm font-semibold mb-1">Image URL(s) <span className="font-normal text-neutral-400 text-xs">(comma-separated for multiple)</span></label>
+                  <textarea rows={2} value={formData.imageUrl} onChange={(e) => setFormData({...formData, imageUrl: e.target.value})} className="w-full border border-neutral-300 p-3 text-sm focus:outline-none focus:border-black resize-none font-mono text-xs" placeholder="https://example.com/image1.jpg, https://example.com/image2.jpg" />
+                  {formData.imageUrl && (
+                    <div className="mt-3 flex gap-2 flex-wrap">
+                      {formData.imageUrl.split(',').filter(u => u.trim()).slice(0, 4).map((imgUrl, idx) => (
+                        <div key={idx} className={twMerge("w-20 h-20 bg-neutral-100 border overflow-hidden relative", idx === 0 && "ring-2 ring-[#E63946]")}>
+                          <img src={imgUrl.trim()} alt={`Preview ${idx + 1}`} className="w-full h-full object-cover" />
+                          {idx === 0 && <span className="absolute top-0 left-0 bg-[#E63946] text-white text-[7px] font-bold uppercase px-1">Main</span>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div><label className="block text-sm font-semibold mb-1 mt-2">Category</label>
                   <select value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})} className="w-full border border-neutral-300 p-3 text-sm focus:outline-none focus:border-black">
@@ -634,12 +800,12 @@ export default function DashboardPage() {
               </div>
               {isLoadingProducts ? (
                 <div className="p-8 text-center"><Loader2 size={24} className="animate-spin mx-auto text-neutral-400" /></div>
-              ) : products.length === 0 ? (
-                <div className="p-8 text-center text-neutral-500 text-sm">No products yet.</div>
+              ) : filteredProducts.length === 0 ? (
+                <div className="p-8 text-center text-neutral-500 text-sm">No products found matching filters.</div>
               ) : (
                 <div className="max-h-[700px] overflow-y-auto">
                   <table className="w-full text-left"><tbody>
-                    {products.map((p) => {
+                    {filteredProducts.map((p) => {
                       const totalStock = Object.values(p.sizes || {}).reduce((a: number, b) => a + (typeof b === 'object' ? b.stock : (b as number)), 0);
                       return (
                         <tr key={p.id} className={twMerge("border-b border-neutral-200 hover:bg-neutral-50", editingId === p.id && "bg-neutral-100")}>
@@ -812,32 +978,58 @@ export default function DashboardPage() {
                 <div className="p-8 text-center"><Loader2 size={24} className="animate-spin mx-auto text-neutral-400" /></div>
               ) : cartEvents.length === 0 ? (
                 <div className="p-8 text-center text-neutral-500 text-sm">No cart activity yet.</div>
-              ) : (
-                <div className="max-h-[600px] overflow-y-auto">
-                  {cartEvents.map((e: any) => {
-                    const age = Date.now() - new Date(e.createdAt).getTime();
-                    const isRecent = age < 5 * 60 * 1000;
-                    const timeAgo = age < 60000 ? 'just now'
-                      : age < 3600000 ? `${Math.floor(age / 60000)}m ago`
-                      : age < 86400000 ? `${Math.floor(age / 3600000)}h ago`
-                      : new Date(e.createdAt).toLocaleDateString();
-                    return (
-                      <div key={e.id} className={`flex items-center gap-3 p-3 border-b border-neutral-100 ${isRecent ? 'bg-green-50' : ''}`}>
-                        <div className="w-8 h-8 bg-neutral-100 rounded-sm flex items-center justify-center shrink-0">
-                          <ShoppingCart size={14} className={isRecent ? 'text-green-600' : 'text-neutral-400'} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold truncate">{e.productName}</p>
-                          <p className="text-[10px] text-neutral-500">Size {e.size} · {formatCurrency(e.price)}</p>
-                        </div>
-                        <div className="text-right shrink-0">
-                          <span className={`text-[10px] font-bold ${isRecent ? 'text-green-600' : 'text-neutral-400'}`}>{timeAgo}</span>
-                        </div>
+              ) : (() => {
+                const now = Date.now();
+                const activeEvents = cartEvents.filter((e: any) => now - new Date(e.createdAt).getTime() < 30 * 60 * 1000);
+                const recentEvents = cartEvents.filter((e: any) => now - new Date(e.createdAt).getTime() >= 30 * 60 * 1000);
+                const renderEvent = (e: any, isActive: boolean) => {
+                  const age = now - new Date(e.createdAt).getTime();
+                  const timeAgo = age < 60000 ? 'just now'
+                    : age < 3600000 ? `${Math.floor(age / 60000)}m ago`
+                    : age < 86400000 ? `${Math.floor(age / 3600000)}h ago`
+                    : new Date(e.createdAt).toLocaleDateString();
+                  return (
+                    <div key={e.id} className={`flex items-center gap-3 p-3 border-b border-neutral-100 ${isActive ? 'bg-green-50' : ''}`}>
+                      <div className="w-8 h-8 bg-neutral-100 rounded-sm flex items-center justify-center shrink-0">
+                        <ShoppingCart size={14} className={isActive ? 'text-green-600' : 'text-neutral-400'} />
                       </div>
-                    );
-                  })}
-                </div>
-              )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold truncate">{e.productName}</p>
+                        <p className="text-[10px] text-neutral-500">Size {e.size} · {formatCurrency(e.price)}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className={`text-[10px] font-bold ${isActive ? 'text-green-600' : 'text-neutral-400'}`}>{timeAgo}</span>
+                      </div>
+                    </div>
+                  );
+                };
+                return (
+                  <div className="max-h-[600px] overflow-y-auto">
+                    {activeEvents.length > 0 && (
+                      <>
+                        <div className="px-4 py-2 bg-green-50 border-b border-green-200">
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-green-700 flex items-center gap-1.5">
+                            <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span></span>
+                            Active Carts ({activeEvents.length})
+                          </span>
+                        </div>
+                        {activeEvents.map((e: any) => renderEvent(e, true))}
+                      </>
+                    )}
+                    {recentEvents.length > 0 && (
+                      <>
+                        <div className="px-4 py-2 bg-neutral-50 border-b border-neutral-200 border-t border-neutral-200">
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Recent ({recentEvents.length})</span>
+                        </div>
+                        {recentEvents.slice(0, 20).map((e: any) => renderEvent(e, false))}
+                        {recentEvents.length > 20 && (
+                          <div className="p-3 text-center text-[10px] text-neutral-400 uppercase tracking-wider">+ {recentEvents.length - 20} more</div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         )}

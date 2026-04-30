@@ -1,9 +1,17 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { createClient } from '@/utils/supabase/server';
+import { OWNER_EMAILS } from '@/lib/constants';
 
 // GET — list all coupons (dashboard)
 export async function GET() {
   try {
+    const supabase = await createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user?.email || !OWNER_EMAILS.includes(session.user.email)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const coupons = await prisma.coupon.findMany({
       orderBy: { createdAt: 'desc' },
     });
@@ -17,6 +25,12 @@ export async function GET() {
 // POST — create a new coupon
 export async function POST(req: Request) {
   try {
+    const supabase = await createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user?.email || !OWNER_EMAILS.includes(session.user.email)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { code, discountType, discountValue, minOrderValue, maxUses, expiresAt } = await req.json();
 
     if (!code || !discountValue) {
@@ -49,6 +63,12 @@ export async function POST(req: Request) {
 // PUT — update a coupon (toggle active, edit fields)
 export async function PUT(req: Request) {
   try {
+    const supabase = await createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user?.email || !OWNER_EMAILS.includes(session.user.email)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { id, ...data } = await req.json();
 
     if (!id) {
@@ -79,6 +99,12 @@ export async function PUT(req: Request) {
 // DELETE — delete a coupon
 export async function DELETE(req: Request) {
   try {
+    const supabase = await createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user?.email || !OWNER_EMAILS.includes(session.user.email)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
 

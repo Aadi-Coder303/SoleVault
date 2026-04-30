@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { createClient } from '@/utils/supabase/server';
+import { OWNER_EMAILS } from '@/lib/constants';
 
 export async function GET(req: Request) {
   try {
@@ -7,6 +9,10 @@ export async function GET(req: Request) {
     const category = searchParams.get('category');
     const brand = searchParams.get('brand');
     const sort = searchParams.get('sort'); // price_asc, price_desc, newest
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
+    const requestedLimit = parseInt(searchParams.get('limit') || '24', 10);
+    const limit = isNaN(requestedLimit) ? 24 : Math.min(requestedLimit, 100);
+    const q = searchParams.get('q');
     
     const ids = searchParams.get('ids');
     
@@ -19,20 +25,51 @@ export async function GET(req: Request) {
     // Support fetching by specific IDs (for stock validation)
     if (ids) {
       where.id = { in: ids.split(',').filter(Boolean) };
+      // When fetching by IDs, return all without pagination
+      const products = await prisma.product.findMany({ where, orderBy });
+      return NextResponse.json(products);
+    }
+
+    if (q) {
+      where.OR = [
+        { name: { contains: q, mode: 'insensitive' } },
+        { brand: { contains: q, mode: 'insensitive' } },
+      ];
     }
 
     if (category && category.toLowerCase() !== 'sale') {
-      where.category = { equals: category, mode: 'insensitive' };
+      const categories = category.split(',').map((c: string) => c.trim());
+      where.category = { in: categories, mode: 'insensitive' };
     }
     if (brand) {
-      where.brand = { equals: brand, mode: 'insensitive' };
+      const brands = brand.split(',').map((b: string) => b.trim());
+      where.brand = { in: brands, mode: 'insensitive' };
     }
 
-    const products = await prisma.product.findMany({
-      where,
-      orderBy,
-    });
-    return NextResponse.json(products);
+    // Check if pagination is requested (page param present in URL)
+    const paginated = searchParams.has('page') || searchParams.has('limit');
+    
+    if (paginated) {
+      const [products, totalCount] = await Promise.all([
+        prisma.product.findMany({
+          where,
+          orderBy,
+          skip: (page - 1) * limit,
+          take: limit,
+        }),
+        prisma.product.count({ where }),
+      ]);
+      return NextResponse.json({
+        products,
+        totalCount,
+        page,
+        hasMore: page * limit < totalCount,
+      });
+    } else {
+      // Legacy: return flat array for backward compat (dashboard, stock checks, etc.)
+      const products = await prisma.product.findMany({ where, orderBy });
+      return NextResponse.json(products);
+    }
   } catch (error: any) {
     console.error('Failed to fetch products:', error)
     return NextResponse.json(
@@ -44,6 +81,12 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
+    const supabase = await createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user?.email || !OWNER_EMAILS.includes(session.user.email)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await req.json();
     const { name, brand, description, price, imageUrl, sizes, category, colorName, parentId, isSourced, sourcedDeliveryEstimate, sourcedNote } = body;
 
@@ -77,6 +120,12 @@ export async function POST(req: Request) {
 
 export async function PUT(req: Request) {
   try {
+    const supabase = await createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user?.email || !OWNER_EMAILS.includes(session.user.email)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await req.json();
     const { id, name, brand, description, price, imageUrl, sizes, category, colorName, parentId, isSourced, sourcedDeliveryEstimate, sourcedNote } = body;
 
@@ -115,6 +164,12 @@ export async function PUT(req: Request) {
 
 export async function DELETE(req: Request) {
   try {
+    const supabase = await createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user?.email || !OWNER_EMAILS.includes(session.user.email)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
 

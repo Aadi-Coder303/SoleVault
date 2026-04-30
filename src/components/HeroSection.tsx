@@ -3,16 +3,51 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { ArrowRight } from 'lucide-react';
 
+const HERO_BACKGROUNDS = [
+  'https://cdn.shopify.com/s/files/1/0360/6491/9692/files/1_7025dff6-2073-4439-a383-6cf4f3061853.png?v=1755093992',
+  'https://cdn.shopify.com/s/files/1/0360/6491/9692/files/6841.png?v=1755096173',
+  'https://cdn.shopify.com/s/files/1/0360/6491/9692/files/adidas-samba-og-black-white-gum-sneakers-crepdog-crew-1.png?v=1711718042',
+];
+
 export default function HeroSection() {
   const [visible, setVisible] = useState(false);
+  const [bgIndex, setBgIndex] = useState(0);
+  const [isFading, setIsFading] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setVisible(true), 80);
     return () => clearTimeout(t);
   }, []);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIsFading(true);
+      setTimeout(() => {
+        setBgIndex(prev => (prev + 1) % HERO_BACKGROUNDS.length);
+        setIsFading(false);
+      }, 600);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <section className="relative w-full min-h-[90vh] bg-neutral-950 flex items-center justify-center overflow-hidden">
+      
+      {/* Rotating Background Images */}
+      {HERO_BACKGROUNDS.map((url, i) => (
+        <div
+          key={url}
+          className="absolute inset-0 bg-cover bg-center transition-all duration-[1200ms] ease-in-out"
+          style={{
+            backgroundImage: `url('${url}')`,
+            opacity: bgIndex === i ? (isFading ? 0 : 0.35) : 0,
+            transform: bgIndex === i ? 'scale(1.05)' : 'scale(1.12)',
+          }}
+        />
+      ))}
+
+      {/* Grain texture overlay */}
+      <div className="absolute inset-0 opacity-[0.03] mix-blend-overlay pointer-events-none" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")` }} />
 
       {/* Animated gradient orbs */}
       <div className="absolute inset-0 pointer-events-none">
@@ -30,7 +65,7 @@ export default function HeroSection() {
           style={{ opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(32px)' }}
         >
           <span className="inline-block text-[#E63946] text-xs font-bold uppercase tracking-[0.3em] mb-6 border border-[#E63946]/30 px-4 py-1.5 rounded-sm">
-            100% Authentic • India's Premium Resale
+            100% Authentic • India&apos;s Premium Resale
           </span>
         </div>
 
@@ -74,10 +109,15 @@ export default function HeroSection() {
         </div>
       </div>
 
-      {/* Scroll indicator */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-40">
-        <span className="text-white text-xs uppercase tracking-widest">Scroll</span>
-        <div className="w-px h-8 bg-white/40 animate-pulse" />
+      {/* Background indicator dots */}
+      <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex items-center gap-2 z-20">
+        {HERO_BACKGROUNDS.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => { setIsFading(true); setTimeout(() => { setBgIndex(i); setIsFading(false); }, 400); }}
+            className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${bgIndex === i ? 'bg-[#E63946] w-4' : 'bg-white/30 hover:bg-white/50'}`}
+          />
+        ))}
       </div>
     </section>
   );

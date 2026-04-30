@@ -3,17 +3,17 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #111111;
-  --accent: #E63946;
-  --accent-glow: rgba(230, 57, 70, 0.15);
+  --background: #FCFCFA; /* Soft Alabaster */
+  --foreground: #1A1A1A; /* Deep Charcoal */
+  --accent: #2C2C2C; /* Classy Obsidian */
+  --accent-glow: rgba(44, 44, 44, 0.08);
 }
 
 .dark {
-  --background: #0a0a0a;
-  --foreground: #f5f5f5;
-  --accent: #E63946;
-  --accent-glow: rgba(230, 57, 70, 0.25);
+  --background: #0D0D0D; /* Rich Black */
+  --foreground: #F0F0F0; /* Soft Ivory */
+  --accent: #E5E5E5; /* Light Platinum */
+  --accent-glow: rgba(229, 229, 229, 0.1);
 }
 
 body {

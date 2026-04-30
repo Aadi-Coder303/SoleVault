@@ -1,7 +1,15 @@
 import { NextResponse } from 'next/server';
+import { createClient } from '@/utils/supabase/server';
+import { OWNER_EMAILS } from '@/lib/constants';
 
 export async function POST(req: Request) {
   try {
+    const supabase = await createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user?.email || !OWNER_EMAILS.includes(session.user.email)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { orderId, email, status } = await req.json();
 
     if (!orderId || !email || !status) {

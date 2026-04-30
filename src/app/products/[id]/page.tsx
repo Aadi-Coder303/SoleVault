@@ -1,6 +1,7 @@
 import prisma from '@/lib/prisma';
 import ProductClient from '@/components/ProductClient';
-import ProductRecommendations from '@/components/ProductRecommendations';
+import ProductRecommendationsServer from '@/components/ProductRecommendationsServer';
+import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 
 export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -17,20 +18,16 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   // Fetch color variants: find all products in the same color group
   let colorVariants: { id: string; name: string; colorName: string | null; imageUrl: string | null }[] = [];
   
-  // Check if this product is part of a group (has parentId or colorName)
-  // OR if other products reference this product as their parent
   const hasChildren = await prisma.product.count({ where: { parentId: product.id } });
   
   if (product.parentId || product.colorName || hasChildren > 0) {
-    // If this product has a parentId, the group root is that parent.
-    // Otherwise, this product IS the group root.
     const groupId = product.parentId || product.id;
     
     const variants = await prisma.product.findMany({
       where: {
         OR: [
-          { id: groupId },           // the parent itself
-          { parentId: groupId },     // all children of the parent
+          { id: groupId },
+          { parentId: groupId },
         ],
       },
       select: { id: true, name: true, colorName: true, imageUrl: true },
@@ -42,78 +39,30 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
     }
   }
 
-  // --- Recommendations ---
-
-  // 1. "More From [Brand]" — same brand, exclude current + color variants
   const colorVariantIds = colorVariants.map(v => v.id);
-  const excludeIds = [id, ...colorVariantIds];
-  
-  const moreBrand = await prisma.product.findMany({
-    where: {
-      brand: { equals: product.brand, mode: 'insensitive' },
-      id: { notIn: excludeIds },
-    },
-    take: 4,
-    orderBy: { createdAt: 'desc' },
-  });
-
-  // 2. "People Also Bought" — find orders that contain this product, extract other productIds
-  let alsoBoought: typeof moreBrand = [];
-  try {
-    const ordersWithProduct = await prisma.order.findMany({
-      where: {
-        status: { in: ['paid', 'confirmed', 'shipped', 'delivered'] },
-      },
-      select: { items: true },
-      take: 100,
-      orderBy: { createdAt: 'desc' },
-    });
-
-    // Filter orders that contain current product and extract other product IDs
-    const coProductIds = new Set<string>();
-    for (const order of ordersWithProduct) {
-      const items = order.items as Array<{ productId: string }>;
-      if (!Array.isArray(items)) continue;
-      const hasThisProduct = items.some(i => i.productId === id);
-      if (hasThisProduct) {
-        items.forEach(i => {
-          if (i.productId && i.productId !== id && !excludeIds.includes(i.productId)) {
-            coProductIds.add(i.productId);
-          }
-        });
-      }
-    }
-
-    if (coProductIds.size > 0) {
-      alsoBoought = await prisma.product.findMany({
-        where: { id: { in: Array.from(coProductIds).slice(0, 4) } },
-      });
-    }
-  } catch (e) {
-    console.error('Also bought query error:', e);
-  }
-
-  // 3. "You May Also Like" — same category, different products, fill remaining slots
-  const alreadyShownIds = [...excludeIds, ...moreBrand.map(p => p.id), ...alsoBoought.map(p => p.id)];
-  
-  const youMayLike = await prisma.product.findMany({
-    where: {
-      category: { equals: product.category, mode: 'insensitive' },
-      id: { notIn: alreadyShownIds },
-    },
-    take: 4,
-    orderBy: { createdAt: 'desc' },
-  });
 
   return (
     <>
       <ProductClient product={product} colorVariants={colorVariants} />
-      <ProductRecommendations
-        moreBrand={moreBrand}
-        alsoBought={alsoBoought}
-        youMayLike={youMayLike}
-        brandName={product.brand}
-      />
+      <Suspense fallback={
+        <div className="container mx-auto px-4 py-12">
+          <div className="animate-pulse space-y-4">
+            <div className="h-8 bg-neutral-200 dark:bg-neutral-800 rounded w-1/4"></div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="aspect-[4/5] bg-neutral-200 dark:bg-neutral-800 rounded-2xl"></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      }>
+        <ProductRecommendationsServer
+          productId={product.id}
+          brand={product.brand}
+          category={product.category}
+          colorVariantIds={colorVariantIds}
+        />
+      </Suspense>
     </>
   );
 }
