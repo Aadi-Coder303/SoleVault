@@ -36,29 +36,29 @@ export default function SizeSelector({ sizes, onSelect }: SizeSelectorProps) {
         <span className="font-semibold">Select Size (UK)</span>
       </div>
 
-      <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {sizes.map((size) => (
           <button
             key={size.id}
             disabled={!size.available}
             onClick={() => handleSelect(size.id, size.available, size.price)}
             className={twMerge(
-              "relative py-3 px-2 text-sm font-medium transition-all min-h-[48px] flex flex-col items-center justify-center gap-0.5 rounded-full",
+              "relative py-3 px-4 text-sm font-medium transition-all min-h-[52px] flex flex-col items-center justify-center gap-1 rounded-full",
               size.available 
                 ? "border border-neutral-200 dark:border-neutral-700 hover:border-neutral-400 dark:hover:border-neutral-500 cursor-pointer bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white" 
                 : "border border-neutral-100 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50 text-neutral-300 dark:text-neutral-600 cursor-not-allowed line-through",
-              selectedSize === size.id && "bg-neutral-900 dark:bg-neutral-100 text-white dark:text-black border-neutral-900 dark:border-white hover:border-neutral-900 dark:hover:border-white shadow-md"
+              selectedSize === size.id && "bg-black dark:bg-white text-white dark:text-black border-black dark:border-white hover:border-black dark:hover:border-white shadow-md"
             )}
           >
             <span>UK {size.label}</span>
-            {size.available && hasVaryingPrices && size.price && (
-              <span className={twMerge("text-[9px] font-semibold tracking-wider", selectedSize === size.id ? "text-neutral-300 dark:text-neutral-600" : "text-neutral-400")}>
+            {size.available && size.price && (
+              <span className={twMerge("text-[10px] font-semibold tracking-wider", selectedSize === size.id ? "text-neutral-300 dark:text-neutral-600" : "text-neutral-500 dark:text-neutral-400")}>
                 ₹{size.price.toLocaleString('en-IN')}
               </span>
             )}
             {size.available && size.stock && size.stock <= 3 && (
-              <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-[9px] px-1.5 py-0.5 rounded-full font-bold shadow-sm">
-                Left
+              <span className="absolute -top-1.5 -right-1.5 bg-amber-500 text-white text-[9px] px-2 py-0.5 rounded-full font-bold shadow-sm">
+                {size.stock} Left
               </span>
             )}
           </button>
