@@ -94,18 +94,34 @@ export async function POST(req: Request) {
         customerEmail: email,
         customerPhone: phone,
         address,
+        userId: session?.user?.id || null,
         items: validatedItems,
         couponCode: serverDiscount > 0 ? couponCode : null,
         discount: serverDiscount,
       },
     });
 
-    // Increment coupon usage if a coupon was applied
-    if (couponCode) {
-      await prisma.coupon.updateMany({
-        where: { code: couponCode.toUpperCase().trim() },
-        data: { usedCount: { increment: 1 } },
+    // Increment coupon usage and record redemption if a coupon was applied
+    if (serverDiscount > 0 && couponCode) {
+      const dbCoupon = await prisma.coupon.findUnique({
+        where: { code: couponCode.toUpperCase().trim() }
       });
+
+      if (dbCoupon) {
+        await prisma.$transaction([
+          prisma.coupon.update({
+            where: { id: dbCoupon.id },
+            data: { usedCount: { increment: 1 } },
+          }),
+          prisma.couponRedemption.create({
+            data: {
+              couponId: dbCoupon.id,
+              userId: session?.user?.id || 'anonymous',
+              orderId: txnid,
+            }
+          })
+        ]);
+      }
     }
 
     return NextResponse.json({ success: true, txnid });

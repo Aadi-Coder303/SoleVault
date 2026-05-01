@@ -42,12 +42,14 @@ export default function CartPage() {
           <div className="md:w-2/3 flex flex-col gap-6">
             {items.map(item => (
               <div key={item.id} className="flex gap-4 border-b border-neutral-200 dark:border-neutral-800 pb-6">
-                <div className="w-24 h-24 bg-neutral-100 dark:bg-neutral-800 flex-shrink-0 overflow-hidden">
-                  {item.imageUrl && <img src={item.imageUrl.split(',')[0].trim()} alt={item.name} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />}
-                </div>
+                {/* Clickable product image */}
+                <Link href={`/products/${item.productId}`} className="w-24 h-24 bg-neutral-100 dark:bg-neutral-800 flex-shrink-0 overflow-hidden rounded-sm ring-1 ring-transparent hover:ring-neutral-300 dark:hover:ring-neutral-600 transition-all">
+                  {item.imageUrl && <img src={item.imageUrl.split(',')[0].trim()} alt={item.name} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />}
+                </Link>
                 <div className="flex-1 flex flex-col justify-between">
                   <div>
-                    <h3 className="font-bold">{item.name}</h3>
+                    {/* Clickable product name */}
+                    <Link href={`/products/${item.productId}`} className="font-bold hover:text-neutral-500 transition-colors hover:underline underline-offset-2">{item.name}</Link>
                     <p className="text-sm text-neutral-500">Size: {item.size}</p>
                   </div>
                   <div className="flex justify-between items-center mt-2">

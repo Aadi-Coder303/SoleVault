@@ -41,6 +41,7 @@ model Order {
   customerEmail String
   customerPhone String
   address       String
+  userId        String?  // Supabase auth user ID
   items         Json     // [{ productId, name, size, price, qty }]
   couponCode    String?  // coupon code used, if any
   discount      Float    @default(0) // discount amount applied
@@ -64,17 +65,30 @@ model UserData {
 }
 
 model Coupon {
-  id            String    @id @default(uuid())
-  code          String    @unique
-  discountType  String    @default("percent") // "percent" | "flat"
-  discountValue Float                         // 10 = 10% or ₹10
-  minOrderValue Float     @default(0)
-  maxUses       Int       @default(0)         // 0 = unlimited
-  usedCount     Int       @default(0)
-  isActive      Boolean   @default(true)
-  expiresAt     DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id                String             @id @default(uuid())
+  code              String             @unique
+  discountType      String             @default("percent") // "percent" | "flat"
+  discountValue     Float                                  // 10 = 10% or ₹10
+  minOrderValue     Float              @default(0)
+  maxUses           Int                @default(0)        // 0 = unlimited total
+  maxUsesPerAccount Int                @default(0)        // 0 = unlimited per account
+  usedCount         Int                @default(0)
+  isActive          Boolean            @default(true)
+  expiresAt         DateTime?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  redemptions       CouponRedemption[]
+}
+
+model CouponRedemption {
+  id        String   @id @default(uuid())
+  couponId  String
+  userId    String   // Supabase auth user ID
+  orderId   String?  // order txnid, set after payment confirms
+  createdAt DateTime @default(now())
+  coupon    Coupon   @relation(fields: [couponId], references: [id])
+
+  @@index([couponId, userId])
 }
 
 model CartEvent {

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { createClient } from '@/utils/supabase/server';
 
 export async function POST(req: Request) {
   try {
@@ -25,8 +26,30 @@ export async function POST(req: Request) {
       return NextResponse.json({ valid: false, error: 'This coupon has expired.' });
     }
 
+    // Check global max uses
     if (coupon.maxUses > 0 && coupon.usedCount >= coupon.maxUses) {
       return NextResponse.json({ valid: false, error: 'This coupon has been fully redeemed.' });
+    }
+
+    // Check per-account limit (requires auth)
+    if (coupon.maxUsesPerAccount > 0) {
+      const supabase = await createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session?.user) {
+        return NextResponse.json({ valid: false, error: 'Please log in to use this coupon.' });
+      }
+
+      const accountUses = await prisma.couponRedemption.count({
+        where: { couponId: coupon.id, userId: session.user.id },
+      });
+
+      if (accountUses >= coupon.maxUsesPerAccount) {
+        return NextResponse.json({
+          valid: false,
+          error: `This coupon can only be used ${coupon.maxUsesPerAccount} time${coupon.maxUsesPerAccount > 1 ? 's' : ''} per account.`,
+        });
+      }
     }
 
     const total = parseFloat(cartTotal) || 0;

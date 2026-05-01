@@ -66,12 +66,24 @@ export async function POST(req: Request) {
             });
           }
 
-          // 3. Increment coupon usage if applicable
+          // 3. Increment coupon usage and record redemption if applicable
           if (order.couponCode) {
-            await tx.coupon.updateMany({
-              where: { code: order.couponCode },
-              data: { usedCount: { increment: 1 } },
+            const dbCoupon = await tx.coupon.findUnique({
+              where: { code: order.couponCode }
             });
+            if (dbCoupon) {
+              await tx.coupon.update({
+                where: { id: dbCoupon.id },
+                data: { usedCount: { increment: 1 } },
+              });
+              await tx.couponRedemption.create({
+                data: {
+                  couponId: dbCoupon.id,
+                  userId: order.userId || 'anonymous',
+                  orderId: order.txnid,
+                }
+              });
+            }
           }
         });
       }

@@ -21,7 +21,8 @@ interface Suggestion {
 
 export default function Navbar() {
   const [user, setUser] = useState<SupabaseUser | null>(null);
-  const getTotalItems = useCartStore(state => state.getTotalItems);
+  const cartItems = useCartStore(state => state.items);
+  const cartCount = cartItems.reduce((t, i) => t + i.quantity, 0);
   const [mounted, setMounted] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -368,9 +369,9 @@ export default function Navbar() {
           </Link>
           <Link href="/cart" aria-label="Cart" className="hover:text-[#E63946] transition-colors relative">
             <ShoppingBag size={20} />
-            {mounted && getTotalItems() > 0 && (
+            {mounted && cartCount > 0 && (
               <span className="absolute -top-1.5 -right-1.5 bg-[#E63946] text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center shadow-sm">
-                {getTotalItems()}
+                {cartCount}
               </span>
             )}
           </Link>
@@ -406,6 +407,16 @@ export default function Navbar() {
             <div className="border-t border-neutral-200 dark:border-neutral-800 mt-2 pt-2">
               <Link href="/wishlist" onClick={() => setMobileMenuOpen(false)} className="py-3 px-2 text-sm uppercase tracking-[0.08em] font-medium text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-all flex items-center gap-2">
                 <Heart size={16} /> Wishlist
+              </Link>
+              <Link href="/cart" onClick={() => setMobileMenuOpen(false)} className="py-3 px-2 text-sm uppercase tracking-[0.08em] font-medium text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-all flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ShoppingBag size={16} /> Bag
+                </div>
+                {mounted && cartCount > 0 && (
+                  <span className="bg-[#E63946] text-white text-[10px] font-bold h-5 px-2 rounded-full flex items-center justify-center">
+                    {cartCount} {cartCount === 1 ? 'item' : 'items'}
+                  </span>
+                )}
               </Link>
               {mounted && user && (
                 <Link href="/orders" onClick={() => setMobileMenuOpen(false)} className="py-3 px-2 text-sm uppercase tracking-[0.08em] font-medium text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-all flex items-center gap-2">

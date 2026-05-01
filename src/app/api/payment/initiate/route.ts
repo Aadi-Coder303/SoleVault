@@ -106,6 +106,7 @@ export async function POST(req: Request) {
         customerEmail: email,
         customerPhone: phone || '',
         address: address || '',
+        userId: session?.user?.id || null,
         items: validatedItems,
         couponCode: serverDiscount > 0 ? couponCode : null,
         discount: serverDiscount,
