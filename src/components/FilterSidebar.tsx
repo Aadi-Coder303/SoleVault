@@ -332,23 +332,6 @@ export default function FilterSidebar() {
         )}
       </FilterSection>
 
-      {/* Sub Category Filter */}
-      {facets?.subCategories && facets.subCategories.length > 0 && (
-        <FilterSection title="Type" defaultOpen={false}>
-          <div className="space-y-3">
-            {facets.subCategories.map(sub => (
-              <CheckboxItem
-                key={sub.label}
-                label={sub.label}
-                isActive={currentSubCategories.includes(sub.label)}
-                onChange={() => toggleFilter('subcategory', sub.label)}
-                count={sub.count}
-              />
-            ))}
-          </div>
-        </FilterSection>
-      )}
-
       {/* Brand Filter */}
       <FilterSection title="Brands" defaultOpen={true}>
         <div className="space-y-3">
