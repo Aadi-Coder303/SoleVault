@@ -8,7 +8,7 @@ import { formatCurrency } from '@/lib/formatCurrency';
 import { useState, useEffect } from 'react';
 import { Heart, ShieldCheck, Truck, RefreshCcw, Zap, ChevronDown } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 
 interface ProductData {
@@ -37,13 +37,26 @@ export default function ProductClient({ product, colorVariants = [] }: { product
   const { toggleItem, hasItem } = useWishlistStore();
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  // Auto-select size from URL param (e.g. ?size=UK 8)
+  const urlSize = searchParams.get('size');
 
   // Handle both size formats: plain number or { stock, price }
   const sizesMap = (product.sizes as Record<string, number | { stock: number; price: number }>) || {};
+
+  useEffect(() => {
+    setMounted(true);
+    // Auto-select size from URL on mount
+    if (urlSize && sizesMap[urlSize] !== undefined) {
+      const val = sizesMap[urlSize];
+      const sizePrice = typeof val === 'object' ? val.price : undefined;
+      setSelectedSize(urlSize);
+      setDisplayPrice(sizePrice || product.price);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const totalStock = Object.values(sizesMap).reduce((a: number, b) => {
     return a + (typeof b === 'object' ? b.stock : (b as number));
   }, 0);
@@ -169,7 +182,7 @@ export default function ProductClient({ product, colorVariants = [] }: { product
 
         {/* Size Selection */}
         <div className="mb-6">
-          <SizeSelector sizes={formattedSizes} onSelect={handleSizeSelect} />
+          <SizeSelector sizes={formattedSizes} onSelect={handleSizeSelect} initialSize={urlSize || undefined} />
         </div>
 
         {/* CTAs - Pill Shaped & High Contrast */}

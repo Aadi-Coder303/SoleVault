@@ -14,10 +14,11 @@ interface SizeOption {
 interface SizeSelectorProps {
   sizes: SizeOption[];
   onSelect?: (sizeId: string, price?: number) => void;
+  initialSize?: string;
 }
 
-export default function SizeSelector({ sizes, onSelect }: SizeSelectorProps) {
-  const [selectedSize, setSelectedSize] = useState<string | null>(null);
+export default function SizeSelector({ sizes, onSelect, initialSize }: SizeSelectorProps) {
+  const [selectedSize, setSelectedSize] = useState<string | null>(initialSize || null);
   const [showSizeGuide, setShowSizeGuide] = useState(false);
 
   const handleSelect = (sizeId: string, available: boolean, price?: number) => {

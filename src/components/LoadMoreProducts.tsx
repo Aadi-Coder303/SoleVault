@@ -25,6 +25,9 @@ export default function LoadMoreProducts({ initialProducts, totalCount, pageSize
   const [isLoading, setIsLoading] = useState(false);
   const hasMore = products.length < totalCount;
 
+  // Extract active size filter from query params (only use first size for price display)
+  const activeSize = new URLSearchParams(queryParams).get('size')?.split(',')[0] || undefined;
+
   const loadMore = async () => {
     setIsLoading(true);
     const nextPage = page + 1;
@@ -53,6 +56,7 @@ export default function LoadMoreProducts({ initialProducts, totalCount, pageSize
               price={p.price}
               imageUrl={p.imageUrl || ''}
               sizes={p.sizes}
+              activeSize={activeSize}
             />
           </div>
         ))}

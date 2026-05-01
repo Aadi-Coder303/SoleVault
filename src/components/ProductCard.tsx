@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { Heart } from 'lucide-react';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { useWishlistStore } from '@/store/useWishlistStore';
@@ -16,9 +17,10 @@ interface ProductCardProps {
   originalPrice?: number;
   imageUrl?: string;
   sizes?: Record<string, number | { stock: number; price: number }>;
+  activeSize?: string; // from size filter — show this size's price, not range
 }
 
-export default function ProductCard({ id, name, price, originalPrice, imageUrl, sizes }: ProductCardProps) {
+export default function ProductCard({ id, name, price, originalPrice, imageUrl, sizes, activeSize }: ProductCardProps) {
   const { toggleItem, hasItem } = useWishlistStore();
   const { addItem } = useCartStore();
   const [mounted, setMounted] = useState(false);
@@ -38,7 +40,19 @@ export default function ProductCard({ id, name, price, originalPrice, imageUrl, 
     .filter(p => p > 0) : [];
   const minPrice = sizePrices.length > 0 ? Math.min(...sizePrices) : price;
   const maxPrice = sizePrices.length > 0 ? Math.max(...sizePrices) : price;
-  const hasPriceRange = minPrice !== maxPrice;
+
+  // When a size filter is active, show that size's specific price
+  let activeSizePrice: number | null = null;
+  if (activeSize && sizes) {
+    const val = sizes[activeSize];
+    if (val !== undefined) {
+      activeSizePrice = typeof val === 'object' ? val.price : price;
+    }
+  }
+  const hasPriceRange = activeSizePrice === null && minPrice !== maxPrice;
+
+  // Build product link — append ?size= when a size filter is active
+  const productHref = activeSize ? `/products/${id}?size=${encodeURIComponent(activeSize)}` : `/products/${id}`;
 
   useEffect(() => {
     setMounted(true);
@@ -107,7 +121,7 @@ export default function ProductCard({ id, name, price, originalPrice, imageUrl, 
       )}
 
       {/* Image Area */}
-      <Link href={`/products/${id}`} className="block relative aspect-[4/5] bg-neutral-100/50 dark:bg-neutral-800/30 overflow-hidden rounded-2xl sm:rounded-3xl transition-transform duration-500 group-hover:-translate-y-1 group-hover:shadow-lg dark:group-hover:shadow-neutral-900/50">
+      <Link href={productHref} className="block relative aspect-[4/5] bg-neutral-100/50 dark:bg-neutral-800/30 overflow-hidden rounded-2xl sm:rounded-3xl transition-transform duration-500 group-hover:-translate-y-1 group-hover:shadow-lg dark:group-hover:shadow-neutral-900/50">
         <div className="absolute inset-0 flex items-center justify-center text-neutral-400">
           {imageUrl ? (
             <>
@@ -172,12 +186,14 @@ export default function ProductCard({ id, name, price, originalPrice, imageUrl, 
 
       {/* Info Area */}
       <div className="pt-4 sm:pt-5 pb-2 flex flex-col gap-1 sm:gap-1.5 px-1 items-center text-center">
-        <Link href={`/products/${id}`} className="w-full">
+        <Link href={productHref} className="w-full">
           <h3 className="font-serif font-normal text-sm sm:text-base text-neutral-900 dark:text-neutral-100 truncate w-full hover:text-neutral-500 transition-colors duration-200">{name}</h3>
         </Link>
         
         <div className="flex items-center justify-center gap-2 mt-1 sm:mt-1.5">
-          {hasPriceRange ? (
+          {activeSizePrice !== null ? (
+            <span className="font-medium text-sm sm:text-[15px] tracking-wide">{formatCurrency(activeSizePrice)}</span>
+          ) : hasPriceRange ? (
             <span className="font-medium text-sm sm:text-[15px] tracking-wide">{formatCurrency(minPrice)} – {formatCurrency(maxPrice)}</span>
           ) : (
             <span className="font-medium text-sm sm:text-[15px] tracking-wide">{formatCurrency(price)}</span>
