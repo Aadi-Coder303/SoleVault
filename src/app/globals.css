@@ -158,3 +158,71 @@ input:focus, textarea:focus {
 html {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
+
+/* ── Dual-handle price range slider ── */
+.price-range-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 24px;
+  background: transparent;
+  pointer-events: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Webkit (Chrome, Safari, Edge) */
+.price-range-thumb::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  background: #E63946;
+  border: 3px solid white;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.18);
+  cursor: pointer;
+  pointer-events: auto;
+  position: relative;
+  z-index: 2;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.price-range-thumb::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 0 6px rgba(230, 57, 70, 0.15), 0 1px 6px rgba(0,0,0,0.18);
+}
+.price-range-thumb::-webkit-slider-thumb:active {
+  transform: scale(1.1);
+}
+.dark .price-range-thumb::-webkit-slider-thumb {
+  border-color: #1a1a1a;
+}
+
+/* Firefox */
+.price-range-thumb::-moz-range-thumb {
+  height: 18px;
+  width: 18px;
+  border-radius: 50%;
+  background: #E63946;
+  border: 3px solid white;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.18);
+  cursor: pointer;
+  pointer-events: auto;
+  position: relative;
+  z-index: 2;
+}
+.price-range-thumb::-moz-range-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 0 6px rgba(230, 57, 70, 0.15), 0 1px 6px rgba(0,0,0,0.18);
+}
+.dark .price-range-thumb::-moz-range-thumb {
+  border-color: #1a1a1a;
+}
+.price-range-thumb::-moz-range-track {
+  background: transparent;
+  border: none;
+}
+
+/* Remove default focus outline on range (we have custom glow) */
+.price-range-thumb:focus {
+  outline: none;
+}

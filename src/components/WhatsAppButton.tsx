@@ -1,9 +1,9 @@
 'use client';
 import { MessageCircle } from 'lucide-react';
-import { WHATSAPP_NUMBER, WHATSAPP_DEFAULT_MESSAGE } from '@/lib/constants';
+import { WHATSAPP_DEFAULT_MESSAGE } from '@/lib/constants';
 
 export default function WhatsAppButton() {
-  const href = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_DEFAULT_MESSAGE)}`;
+  const href = `/api/whatsapp?text=${encodeURIComponent(WHATSAPP_DEFAULT_MESSAGE)}`;
 
   return (
     <a

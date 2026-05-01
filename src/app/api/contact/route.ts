@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 
+export const runtime = 'edge';
 // Basic in-memory rate limiting (Note: In a serverless environment like Vercel, this resets on cold starts.
 // For true distributed rate limiting, use Redis/Upstash, but this blocks naive bot floods efficiently.)
 const rateLimitCache = new Map<string, { count: number; timestamp: number }>();
