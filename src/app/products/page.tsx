@@ -2,8 +2,30 @@ import FilterSidebar from '@/components/FilterSidebar';
 import LoadMoreProducts from '@/components/LoadMoreProducts';
 import ProductSort from '@/components/ProductSort';
 import prisma from '@/lib/prisma';
+import Breadcrumbs from '@/components/Breadcrumbs';
+import { Metadata } from 'next';
 import { Suspense } from 'react';
 import { FilterSkeleton, Skeleton } from '@/components/Skeleton';
+
+export async function generateMetadata({ 
+  searchParams 
+}: { 
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }> 
+}): Promise<Metadata> {
+  const params = await searchParams;
+  const category = typeof params.category === 'string' ? params.category : undefined;
+  const brand = typeof params.brand === 'string' ? params.brand : undefined;
+
+  let title = 'Premium Sneakers';
+  if (brand && category) title = `${brand} ${category} Sneakers`;
+  else if (brand) title = `${brand} Sneakers`;
+  else if (category) title = `${category} Sneakers`;
+
+  return {
+    title,
+    description: `Shop the latest ${title} at Sole Vault. 100% authentic sneakers with premium service.`,
+  };
+}
 
 export const revalidate = 60;
 
@@ -154,6 +176,7 @@ export default async function ProductsPage({
 
       {/* Product Grid */}
       <div className="flex-1">
+        <Breadcrumbs items={[{ label: 'Products' }]} />
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold uppercase tracking-wide">
             {category ? `${category} Sneakers` : 'All Sneakers'}

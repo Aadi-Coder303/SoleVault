@@ -68,8 +68,8 @@ export default function HeroSection() {
           style={{ opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(24px)', transitionDelay: '150ms' }}
         >
           <h1 className="text-5xl sm:text-6xl md:text-8xl lg:text-[7rem] font-serif font-normal tracking-tight text-white mb-6 leading-[1.1]">
-            The Curated <br className="hidden sm:block" />
-            <span className="italic opacity-90">Collection.</span>
+            The Authentic <br className="hidden sm:block" />
+            <span className="italic opacity-90">Sneaker Vault.</span>
           </h1>
         </div>
 

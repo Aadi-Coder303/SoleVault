@@ -11,8 +11,54 @@ import { Toaster } from "react-hot-toast";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Sole Vault | Premium Sneaker Resell",
-  description: "100% authentic sneakers sourced from official drops. Elevate your collection today.",
+  metadataBase: new URL("https://solevault.com"),
+  title: {
+    default: "Sole Vault | Premium Sneaker Resell & Authentic Streetwear",
+    template: "%s | Sole Vault"
+  },
+  description: "India's premium destination for 100% authentic sneakers. Shop limited edition Jordans, Yeezys, Nike, and more with our expert authenticity guarantee.",
+  keywords: ["sneakers", "resell", "authentic sneakers", "Jordan India", "Yeezy India", "Sole Vault", "sneaker marketplace", "streetwear"],
+  authors: [{ name: "Sole Vault" }],
+  creator: "Sole Vault",
+  publisher: "Sole Vault",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  openGraph: {
+    title: "Sole Vault | Premium Sneaker Resell",
+    description: "100% authentic sneakers sourced from official drops. Elevate your collection today.",
+    url: "https://solevault.com",
+    siteName: "Sole Vault",
+    images: [
+      {
+        url: "/og-image.jpg", // Assuming an OG image exists or will be added
+        width: 1200,
+        height: 630,
+        alt: "Sole Vault - Premium Sneakers",
+      },
+    ],
+    locale: "en_IN",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Sole Vault | Premium Sneaker Resell",
+    description: "100% authentic sneakers sourced from official drops. Elevate your collection today.",
+    images: ["/og-image.jpg"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
 };
 
 import Footer from "@/components/Footer";
